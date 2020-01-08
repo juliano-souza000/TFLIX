@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="100dp">
+	<ImageView
+		android:id="@+id/thumbnail_dpg_ep"
+		android:layout_width="150dp"
+		android:layout_height="100dp"
+		android:layout_margin="5dp"
+		android:background="#ff505050" />
+	<RelativeLayout
+		android:layout_centerVertical="true"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_toRightOf="@id/thumbnail_dpg_ep">
+	<TextView
+		android:text="TITLE"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:id="@+id/title_dpg_ep"
+		android:layout_centerVertical="true"
+		android:textSize="7.5pt"
+		android:textColor="#fff"
+		android:singleLine="true"
+		android:layout_marginLeft="5dp"/>
+	<TextView
+		android:text="MIN | MB"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:id="@+id/episodes_dpg_ep"
+		android:layout_below="@id/title_dpg_ep"
+		android:layout_toRightOf="@id/thumbnail_dpg_ep"
+		android:textSize="5.5pt"
+		android:textColor="#A0A0A0"
+		android:singleLine="true"
+		android:layout_marginTop="5dp"
+		android:layout_marginLeft="6dp"/>
+	</RelativeLayout>
+	<CheckBox
+		android:id="@+id/episodes_dpg_selector"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginRight="5dp"
+		android:layout_centerVertical="true"
+		android:layout_alignParentRight="true"
+		android:visibility="gone"/>
+</RelativeLayout>
