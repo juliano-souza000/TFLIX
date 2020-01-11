@@ -59,6 +59,7 @@ namespace SeuSeriado
             SetContentView(Resource.Layout.activity_main);
 
             this.RequestedOrientation = Android.Content.PM.ScreenOrientation.Portrait;
+            Window.SetSoftInputMode(SoftInput.StateHidden);
 
             if (List.GetDownloads.Series == null || List.GetDownloads.Series.Count == 0)
                 Utils.Database.CreateDB();

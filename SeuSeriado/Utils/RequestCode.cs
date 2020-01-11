@@ -13,7 +13,7 @@ using Java.Util.Concurrent.Atomic;
 
 namespace SeuSeriado.Utils
 {
-    public class NotificationID
+    public class RequestCode
     {
         private static AtomicInteger c = new AtomicInteger(0);
         public static int ID()

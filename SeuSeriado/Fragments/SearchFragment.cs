@@ -60,7 +60,6 @@ namespace SeuSeriado.Fragments
 
                 SearchRecycler.SetLayoutManager(new LinearLayoutManager(Application.Context));
 
-
                 if (Search != null && !string.IsNullOrWhiteSpace(List.GetSearch.LastSearch))
                 {
                     Search.SetQuery(List.GetSearch.LastSearch, false);
@@ -74,6 +73,12 @@ namespace SeuSeriado.Fragments
                 Search.QueryTextChange += Search_QueryTextChange;
                 SearchRecycler.ScrollChange += SearchRecycler_ScrollChange;
             }
+        }
+
+        public override void OnResume()
+        {
+            base.OnResume();
+            Activity.Window.SetSoftInputMode(SoftInput.StateHidden);
         }
 
         private void Search_QueryTextChange(object sender, SearchView.QueryTextChangeEventArgs e)

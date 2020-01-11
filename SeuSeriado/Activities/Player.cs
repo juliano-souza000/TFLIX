@@ -55,7 +55,7 @@ namespace SeuSeriado.Activities
         System.Timers.Timer CloseControlTimer = new System.Timers.Timer();
         System.Timers.Timer ResetClickCounter = new System.Timers.Timer();
 
-        DownloadFileServiceConnection serviceConnection;
+        public static DownloadFileServiceConnection serviceConnection;
 
         private const int DOWNLOAD_MANAGER_ID = 1;
         private int Pos;
@@ -64,7 +64,7 @@ namespace SeuSeriado.Activities
         private string response;
         private string SubtitleURL;
         private string VideoPlayerDataString;
-        private string epThumb = "";
+
         private bool ShowSubtitles = true;
         private bool IsFromSearch;
         private bool IsPrepared;
@@ -170,8 +170,17 @@ namespace SeuSeriado.Activities
 
         private void Download_Click(object sender, EventArgs e)
         {
-            Pause();
-            DownloadVideo();
+            bool download = false;
+            if (IsFromSearch && !List.GetSearch.Search[Pos].Downloading)
+                download = true;
+            else if (!IsFromSearch && !List.GetMainPageSeries.Series[Pos].Downloading)
+                download = true;
+
+            if (download)
+            {
+                Pause();
+                DownloadVideo();
+            }
 
         }
 
@@ -212,9 +221,6 @@ namespace SeuSeriado.Activities
                 && CheckSelfPermission(Android.Manifest.Permission.WriteExternalStorage) == Android.Content.PM.Permission.Granted)
             {
 
-                if (serviceConnection == null)
-                    serviceConnection = new DownloadFileServiceConnection();
-
                 
                 try
                 {
@@ -233,8 +239,18 @@ namespace SeuSeriado.Activities
                 downloader.PutExtra("DownloadURL", VideoPlayerDataString);
                 downloader.PutExtra("DownloadSHOWID", Pos);
                 downloader.PutExtra("IsFromSearch", IsFromSearch);
-                downloader.PutExtra("DownloadEPDuration", player.Duration);
-                Application.BindService(downloader, serviceConnection, Bind.AutoCreate);
+                //downloader.PutExtra("DownloadEPDuration", player.Duration);
+
+                if (serviceConnection == null)
+                {
+                    Intent serviceBinder = new Intent(this, typeof(DownloadFilesService));
+                    serviceConnection = new DownloadFileServiceConnection();
+                    Application.BindService(serviceBinder, serviceConnection, Bind.AutoCreate);
+                }
+
+                Application.StartService(downloader);
+                
+
                 player.Stop();
                 player.Release();
                 this.Finish();
@@ -506,6 +522,17 @@ namespace SeuSeriado.Activities
                             VideoPlayerDataString = VideoPlayerDataString.Substring(VideoPlayerDataString.IndexOf("Play('"));
                             VideoPlayerDataString = VideoPlayerDataString.Replace("Play('", "");
                         }
+
+                        if (VideoPlayerDataString.Contains("http://videoshare.club/"))
+                        {
+                            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(VideoPlayerDataString);
+                            request.AllowAutoRedirect = false;
+                            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                            response.Close();
+
+                            VideoPlayerDataString = response.Headers["location"];
+                        }
+
                         RunOnUiThread(() =>
                         {
                             try
@@ -601,12 +628,16 @@ namespace SeuSeriado.Activities
                     IsFromSearch = false;
                     PTitle.Text = List.GetMainPageSeries.Series[Pos].Title;
                     DownloadThumbnail(VideoPageUrl(List.GetMainPageSeries.Series[Pos].Title));
+                    if (List.GetMainPageSeries.Series[Pos].Downloading)
+                        Download.SetImageResource(Resource.Drawable.baseline_cloud_download_on);
                 }
                 else
                 {
                     IsFromSearch = true;
                     PTitle.Text = List.GetSearch.Search[Pos].Title.Replace("Online,", "Online ");
                     DownloadThumbnail(VideoPageUrl(List.GetSearch.Search[Pos].Title.Replace("Online,","Online ")));
+                    if(List.GetSearch.Search[Pos].Downloading)
+                        Download.SetImageResource(Resource.Drawable.baseline_cloud_download_on);
                 }
                 GetVideo();
             }

@@ -85,7 +85,7 @@
     <Compile Include="Srt\SubtitleItem.cs" />
     <Compile Include="Utils\ClourdFlareEvader.cs" />
     <Compile Include="Utils\Database.cs" />
-    <Compile Include="Utils\NotificationID.cs" />
+    <Compile Include="Utils\RequestCode.cs" />
     <Compile Include="Utils\Utils.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -295,6 +295,9 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\mipmap-xxxhdpi\baseline_signal_wifi_off_black_48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\baseline_cloud_download_on.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

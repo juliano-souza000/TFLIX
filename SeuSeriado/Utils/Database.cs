@@ -135,6 +135,19 @@ namespace SeuSeriado.Utils
             db = null;
         }
 
+        public static void DeleteItem(bool isSubtitled, string show, int ep, int season)
+        {
+            var db = new SQLiteConnection(DatabaseFile);
+            var table = db.Table<Episodes>();
+
+            try
+            {
+                var showID = db.Table<Shows>().Where(row => row.Show == show && row.IsSubtitled == isSubtitled).Select(row => row.ShowID).First();
+                var bytes = table.Where(row => row.EP == ep && row.ShowSeason == season && row.ShowID == showID).Delete();
+            }
+            catch { }
+        }
+
         public static void UpdateProgress(string show, int showSeason, int ep, int progress, long bytes, bool isSubtitled)
         {
             var db = new SQLiteConnection(DatabaseFile);
@@ -198,6 +211,21 @@ namespace SeuSeriado.Utils
             {
                 var showID = db.Table<Shows>().Where(row => row.Show == show && row.IsSubtitled == isSubtitled).Select(row => row.ShowID).First();
                 var bytes = table.AsEnumerable().Where(row => row.EP == ep && row.ShowSeason == season && row.ShowID == showID).Select(row => row.Bytes).First();
+                return bytes;
+            }
+            catch { }
+            return 0;
+        }
+
+        public static long GetTotalBytes(bool isSubtitled, string show, int ep, int season)
+        {
+            var db = new SQLiteConnection(DatabaseFile);
+            var table = db.Table<Episodes>();
+
+            try
+            {
+                var showID = db.Table<Shows>().Where(row => row.Show == show && row.IsSubtitled == isSubtitled).Select(row => row.ShowID).First();
+                var bytes = table.AsEnumerable().Where(row => row.EP == ep && row.ShowSeason == season && row.ShowID == showID).Select(row => row.TotalBytesEP).First();
                 return bytes;
             }
             catch { }

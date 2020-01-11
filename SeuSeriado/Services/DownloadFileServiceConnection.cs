@@ -13,7 +13,7 @@ using Android.Widget;
 
 namespace SeuSeriado.Services
 {
-    class DownloadFileServiceConnection : Java.Lang.Object, IServiceConnection
+    public class DownloadFileServiceConnection : Java.Lang.Object, IServiceConnection
     {
         static readonly string TAG = typeof(DownloadFileServiceConnection).FullName;
 

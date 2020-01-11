@@ -19,6 +19,7 @@ namespace SeuSeriado.List
         public string ImgLink { get; set; }
         public string IMG64 { get; set; }
         public string EPThumb { get; set; }
+        public bool Downloading { get; set; }
     }
 
     public class GetMainPageSeries
