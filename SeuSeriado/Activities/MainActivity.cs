@@ -16,7 +16,7 @@ using Xamarin.Essentials;
 
 namespace SeuSeriado
 {
-    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true, ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, LaunchMode = Android.Content.PM.LaunchMode.SingleInstance, WindowSoftInputMode = SoftInput.AdjustNothing, ConfigurationChanges = Android.Content.PM.ConfigChanges.KeyboardHidden | Android.Content.PM.ConfigChanges.Orientation | Android.Content.PM.ConfigChanges.ScreenSize)]
+    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true, ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, LaunchMode = Android.Content.PM.LaunchMode.SingleInstance, WindowSoftInputMode = SoftInput.StateHidden | SoftInput.AdjustPan, ConfigurationChanges = Android.Content.PM.ConfigChanges.KeyboardHidden | Android.Content.PM.ConfigChanges.Orientation | Android.Content.PM.ConfigChanges.ScreenSize)]
     public class MainActivity : AppCompatActivity, BottomNavigationView.IOnNavigationItemSelectedListener, BottomNavigationView.IOnNavigationItemReselectedListener
     {
 
@@ -59,10 +59,12 @@ namespace SeuSeriado
             SetContentView(Resource.Layout.activity_main);
 
             this.RequestedOrientation = Android.Content.PM.ScreenOrientation.Portrait;
-            Window.SetSoftInputMode(SoftInput.StateHidden);
 
             if (List.GetDownloads.Series == null || List.GetDownloads.Series.Count == 0)
+            {
                 Utils.Database.CreateDB();
+                Utils.Bookmark.CreateDB();
+            }
 
             Frame = (FrameLayout)FindViewById(Resource.Id.main_frame);
             _Toolbar = (BottomNavigationView)FindViewById(Resource.Id.bottom_navigation);
@@ -94,6 +96,7 @@ namespace SeuSeriado
         protected override void OnRestoreInstanceState(Bundle savedInstanceState)
         {
             base.OnRestoreInstanceState(savedInstanceState);
+            RequestedOrientation = Android.Content.PM.ScreenOrientation.Portrait;
             FramePos = savedInstanceState.GetInt("FRAGMENT");
             PrevFramePos = savedInstanceState.GetInt("PREVFRAGMENT");
             ChangeFrame();

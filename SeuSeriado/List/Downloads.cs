@@ -19,11 +19,32 @@ namespace SeuSeriado.List
         public string EpThumb { get; set; }
         public int EP { get; set; }
         public int ShowSeason { get; set; }
-        public int Progress { get; set; }
+        private int _Progress { get; set; }
         public long Bytes { get; set; }
         public long TotalBytesEP { get; set; }
         public long Duration { get; set; }
         public bool IsSelected { get; set; }
+        public bool IsDownloading { get; set; }
+        public long TimeWatched { get; set; }
+
+        public int Progress
+        {
+            get
+            {
+                return _Progress;
+            }
+            set
+            {
+                _Progress = value;
+                try
+                {
+                    if(IsDownloading)
+                        Activities.DetailedDownloads.ProgressChanged(this.ShowSeason, this.EP);
+                }
+                catch { }
+            }
+        }
+        
     }
 
     public class AllDownloads

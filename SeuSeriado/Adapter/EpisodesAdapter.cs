@@ -17,7 +17,9 @@ using Android.Util;
 using Android.Views;
 using Android.Widget;
 using ByteSizeLib;
+using Java.Lang;
 using SeuSeriado.Activities;
+using Square.Picasso;
 
 namespace SeuSeriado.Adapter
 {
@@ -67,6 +69,11 @@ namespace SeuSeriado.Adapter
             public TextView Title { get; set; }
             public TextView EPMB { get; set; }
             public CheckBox Selector { get; set; }
+            public ProgressBar DownloadProgress { get; set; }
+            public ImageView DonePause { get; set; }
+            public ProgressBar TimeWatched { get; set; }
+            public ImageView Play { get; set; }
+            public RelativeLayout ImageHolder { get; set; }
 
             public EpisodesAdapterHolder(View view) : base(view)
             {
@@ -110,20 +117,24 @@ namespace SeuSeriado.Adapter
                 TextView title = row.FindViewById<TextView>(Resource.Id.title_dpg_ep);
                 TextView epmb = row.FindViewById<TextView>(Resource.Id.episodes_dpg_ep);
                 CheckBox selector = row.FindViewById<CheckBox>(Resource.Id.episodes_dpg_selector);
-
+                ProgressBar downloadProgress = row.FindViewById<ProgressBar>(Resource.Id.download_progressbar); 
+                ImageView donePause = row.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_dp);
+                ProgressBar timeWatched = row.FindViewById<ProgressBar>(Resource.Id.timewatched_progressbar);
+                ImageView play = row.FindViewById<ImageView>(Resource.Id.play_dpg_ep);
+                RelativeLayout imageHolder = row.FindViewById<RelativeLayout>(Resource.Id.imageframe_dpg_ep);
                 selector.Clickable = false;
 
                 row.Click += Row_Click;
                 row.LongClick += Row_LongClick;
                 image.SetScaleType(ImageView.ScaleType.CenterCrop);
-                EpisodesAdapterHolder view = new EpisodesAdapterHolder(row) { Image = image, Title = title, EPMB = epmb, Selector = selector };
+                EpisodesAdapterHolder view = new EpisodesAdapterHolder(row) { Image = image, Title = title, EPMB = epmb, Selector = selector, DownloadProgress = downloadProgress, DonePause = donePause, TimeWatched = timeWatched, Play = play, ImageHolder = imageHolder};
                 return view;
             }
         }
 
         public override long GetItemId(int position) { return base.GetItemId(position); }
 
-        public override async void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
+        public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
         {
             if (holder.ItemViewType == ShowHeader)
             {
@@ -135,40 +146,101 @@ namespace SeuSeriado.Adapter
                 EpisodesAdapterHolder Holder = holder as EpisodesAdapterHolder;
 
                 if (IsUserSelecting)
+                {
+                    if (Holder.Selector.Visibility == ViewStates.Visible)
+                        Holder.Selector.Checked = List.GetDownloads.Series[ListPos].Episodes[position].IsSelected;
                     Holder.Selector.Visibility = ViewStates.Visible;
+                }
                 else
                 {
                     Holder.Selector.Visibility = ViewStates.Gone;
                     Holder.Selector.Checked = false;
                 }
 
-                try
+                if (List.GetDownloads.Series[ListPos].Episodes[position].IsSelected)
                 {
-                    Holder.Image.SetImageBitmap(await GetBitmapFromStorageAsync(List.GetDownloads.Series[ListPos].Episodes[position].EpThumb));
+                    Holder.Image.LayoutParameters.Width = (int)Utils.Utils.DPToPX(context, 120);
+                    Holder.Image.LayoutParameters.Height = (int)Utils.Utils.DPToPX(context, 70);
                 }
-                catch { }
+                else
+                {
+                    Holder.Image.LayoutParameters.Width = (int)Utils.Utils.DPToPX(context, 150);
+                    Holder.Image.LayoutParameters.Height = (int)Utils.Utils.DPToPX(context, 100);
+                }
+                Holder.Image.RequestLayout();
+                //Console.WriteLine("EP: {0} Season: {1} IsDownloading: {2}", List.GetDownloads.Series[ListPos].Episodes[position].EP, List.GetDownloads.Series[ListPos].Episodes[position].ShowSeason, List.GetDownloads.Series[ListPos].Episodes[position].IsDownloading);
+
+                if (List.GetDownloads.Series[ListPos].Episodes[position].IsDownloading == true && !IsUserSelecting)
+                {
+                    Holder.DownloadProgress.Visibility = ViewStates.Visible;
+                    Holder.DownloadProgress.Progress = List.GetDownloads.Series[ListPos].Episodes[position].Progress;
+                }
+                else
+                {
+                    Holder.DownloadProgress.Visibility = ViewStates.Gone;
+                }
+
+                if(List.GetDownloads.Series[ListPos].Episodes[position].Progress == 100 && !IsUserSelecting)
+                {
+                    var res = context.GetDrawable(Resource.Drawable.baseline_mobile_friendly_24);
+                    Holder.DonePause.SetImageDrawable(res);
+                    Holder.DonePause.Visibility = ViewStates.Visible;
+                }
+                else
+                {
+                    Holder.DonePause.Visibility = ViewStates.Gone;
+                }
+
+                if(List.GetDownloads.Series[ListPos].Episodes[position].Progress == 100)
+                {
+                    Holder.Play.Visibility = ViewStates.Visible;
+                    Holder.DownloadProgress.Visibility = ViewStates.Gone;
+                }
+                else
+                {
+                    Holder.Play.Visibility = ViewStates.Gone;
+                }
+
+                Holder.TimeWatched.Max = (int)(List.GetDownloads.Series[ListPos].Episodes[position].Duration);
+                Holder.TimeWatched.Progress = (int)List.GetDownloads.Series[ListPos].Episodes[position].TimeWatched;
+
+                if (!string.IsNullOrWhiteSpace(List.GetDownloads.Series[ListPos].Episodes[position].EpThumb))
+                {
+                    try
+                    {
+                        //Holder.Image.SetImageBitmap(await GetBitmapFromStorageAsync(List.GetDownloads.Series[ListPos].Episodes[position].EpThumb));
+                        Picasso.With(context).Load(new Java.IO.File(List.GetDownloads.Series[ListPos].Episodes[position].EpThumb)).Into(Holder.Image);
+                        //Console.WriteLine("POS: {0} EP{1}: Path:{2}", position, List.GetDownloads.Series[ListPos].Episodes[position].EP, List.GetDownloads.Series[ListPos].Episodes[position].EpThumb);
+                    }
+                    catch { }
+                }
 
                 try
                 {
                     Holder.Title.Text = string.Format("{0}.", List.GetDownloads.Series[ListPos].Episodes[position].EP);
-                    Holder.EPMB.Text = string.Format("{0} | {1}", GetDuration(List.GetDownloads.Series[ListPos].Episodes[position].Duration), Utils.Utils.Size(List.GetDownloads.Series[ListPos].Episodes[position].TotalBytesEP));
+                    Holder.EPMB.Text = string.Format("{0} | {1}", GetDuration(List.GetDownloads.Series[ListPos].Episodes[position].Duration), Utils.Utils.Size(List.GetDownloads.Series[ListPos].Episodes[position].Bytes));
                 }
                 catch { }
             }
+        }
 
-            Console.WriteLine(string.Format("Temporada {0}", List.GetDownloads.Series[ListPos].Episodes[position].ShowSeason));
+        public override void OnViewRecycled(Java.Lang.Object holder)
+        {
+            try
+            {
+                EpisodesAdapterHolder Holder = holder as EpisodesAdapterHolder;
+                Holder.Image.SetImageDrawable(null);
+                Picasso.With(context).CancelRequest(Holder.Image);
+            }
+            catch { }
+            base.OnViewRecycled(holder);
         }
 
         private void Row_LongClick(object sender, View.LongClickEventArgs e)
         {
             int Pos = rec.GetChildLayoutPosition((View)sender);
-            RecyclerView.ViewHolder holder = rec.FindViewHolderForLayoutPosition(Pos);
+            RecyclerView.ViewHolder holder = rec.FindViewHolderForAdapterPosition(Pos);
             CheckBox selector = holder.ItemView.FindViewById<CheckBox>(Resource.Id.episodes_dpg_selector);
-
-            if (!List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected)
-                List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected = true;
-            else
-                List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected = false;
 
             _IOnUserSelectItems.IsUserSelecting(true);
             if (selector.Visibility != ViewStates.Visible)
@@ -176,45 +248,74 @@ namespace SeuSeriado.Adapter
                 BackgroundWorker worker = new BackgroundWorker();
                 worker.DoWork += (s, ex) =>
                 {
-                    do { } while (selector.Visibility != ViewStates.Visible);
+                    do
+                    {
+                        holder = rec.FindViewHolderForLayoutPosition(Pos);
+                        selector = holder.ItemView.FindViewById<CheckBox>(Resource.Id.episodes_dpg_selector);
+                    }
+                    while (selector.Visibility != ViewStates.Visible);
                 };
                 worker.RunWorkerAsync();
                 worker.RunWorkerCompleted += (s, ex) =>
                 {
-                    selector.PerformClick();
+                    try
+                    {
+                        holder = rec.FindViewHolderForLayoutPosition(Pos);
+                        var row = holder.ItemView;
+                        row.PerformClick();
+                    }
+                    catch { }
                 };
-            }else
-                selector.PerformClick();
+            }
+            else
+            {
+                var row = holder.ItemView;
+                row.PerformClick();
+            }
             Console.WriteLine(List.GetDownloads.Series[ListPos].Episodes[Pos].TotalBytesEP);
         }
 
         private void Row_Click(object sender, EventArgs e)
         {
             int Pos = rec.GetChildLayoutPosition((View)sender);
-
+            //Console.WriteLine("Pos: " + Pos);
             if (!IsUserSelecting)
-            {
+            { 
                 _IOnUserSelectItems.IsUserSelecting(false);
-                Intent intent = new Intent(context, typeof(Player));
-                intent.PutExtra("Pos", ListPos);
-
-                intent.PutExtra("VideoPath", Utils.Database.GetVideoPath(List.GetDownloads.Series[ListPos].IsSubtitled, List.GetDownloads.Series[ListPos].Show, List.GetDownloads.Series[ListPos].Episodes[Pos].EP, List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason));
-                intent.PutExtra("IsOnline", false);
-                context.StartActivity(intent);
+                if (List.GetDownloads.Series[ListPos].Episodes[Pos].Progress == 100)
+                {
+                    Intent intent = new Intent(context, typeof(Player));
+                    intent.PutExtra("ListPos", ListPos);
+                    intent.PutExtra("Pos", Pos);
+                    intent.PutExtra("VideoPath", Utils.Database.GetVideoPath(List.GetDownloads.Series[ListPos].IsSubtitled, List.GetDownloads.Series[ListPos].Show, List.GetDownloads.Series[ListPos].Episodes[Pos].EP, List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason));
+                    intent.PutExtra("IsOnline", false);
+                    context.StartActivity(intent);
+                }
             }
             else
             {
                 RecyclerView.ViewHolder holder = rec.FindViewHolderForLayoutPosition(Pos);
                 CheckBox selector = holder.ItemView.FindViewById<CheckBox>(Resource.Id.episodes_dpg_selector);
-                if (!List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected)
-                    List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected = true;
-                else
-                    List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected = false;
+                ImageView thumb = holder.ItemView.FindViewById<ImageView>(Resource.Id.thumbnail_dpg_ep);
+                List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected = !List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected;
 
                 _IOnUserSelectItems.IsUserSelecting(true);
                 selector.PerformClick();
+
+                if (List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected)
+                {
+                    thumb.LayoutParameters.Width = (int)Utils.Utils.DPToPX(context, 120);
+                    thumb.LayoutParameters.Height = (int)Utils.Utils.DPToPX(context, 70);
+                }
+                else
+                {
+                    thumb.LayoutParameters.Width = (int)Utils.Utils.DPToPX(context, 150);
+                    thumb.LayoutParameters.Height = (int)Utils.Utils.DPToPX(context, 100);
+                }
+                thumb.RequestLayout();
             }
         }
+
         private string GetDuration(long timeInMillisec)
         {
            

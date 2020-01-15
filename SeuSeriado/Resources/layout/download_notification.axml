@@ -9,6 +9,7 @@
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:text="TITLE"
+		android:textSize="6.5pt"
 		android:textColor="#000"
 		android:id="@+id/downloadn_title"/>
 	<ProgressBar
@@ -16,7 +17,7 @@
 		android:layout_marginTop="5dp"
 		android:layout_marginRight="15dp"
 		android:layout_width="match_parent"
-		android:layout_height="3dip"
+		android:layout_height="3.5dp"
 		android:layout_below="@id/downloadn_title"
 		style="?android:attr/progressBarStyleHorizontal"
 		android:progressDrawable="@drawable/dowload_progressbar"
@@ -27,7 +28,7 @@
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:text="S1:E1"
-		android:textSize="5.5pt"
+		android:textSize="6pt"
 		android:textColor="#A0A0A0"
 		android:layout_below="@id/downloadn_progress"
 		android:id="@+id/downloadn_se"/>
@@ -37,7 +38,7 @@
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:text="PERC"
-		android:textSize="5.5pt"
+		android:textSize="6pt"
 		android:textColor="#A0A0A0"
 		android:layout_below="@id/downloadn_se"
 		android:id="@+id/downloadn_perc"/>

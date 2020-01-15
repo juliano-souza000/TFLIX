@@ -12,17 +12,25 @@ using Android.Graphics;
 using Android.Graphics.Drawables;
 using Android.OS;
 using Android.Runtime;
+using Android.Support.V4.App;
+using Android.Util;
 using Android.Views;
 using Android.Widget;
 using ByteSizeLib;
 using Newtonsoft.Json;
 using SeuSeriado.List;
+using SeuSeriado.Services;
 using SeuSeriadoTest;
 
 namespace SeuSeriado.Utils
 {
     class Utils
     {
+        public static string filePath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "TempSubtitle.srt");
+        public static DownloadFileServiceConnection serviceConnection;
+
+        public static float DPToPX(Context context, float px) { return px * context.Resources.DisplayMetrics.Density; }
+
         public static byte[] GetImageBytes(Drawable d)
         {
             Bitmap bitmap = ((BitmapDrawable)d).Bitmap;
@@ -31,27 +39,31 @@ namespace SeuSeriado.Utils
             return ms.ToArray();
         }
 
+        public static (string, int, int) BreakFullTitleInParts(string fullTitle)
+        {
+            var Show = fullTitle.Substring(0, fullTitle.IndexOf('ª'));
+            var ShowSeason = int.Parse(Show.Substring(Show.LastIndexOf(' ')));
+            Show = Show.Substring(0, Show.LastIndexOf(' '));
+            var Ep  = fullTitle.Substring(fullTitle.LastIndexOf("Episódio"));
+            Ep = Ep.Substring(0, Ep.LastIndexOf("Online")).Replace("Episódio", "");
+
+            return (Show, ShowSeason, int.Parse(Ep));
+        }
+
         public static string Size(long sizeInBytes)
         {
             var fileSize = ByteSize.FromBytes(Convert.ToDouble(sizeInBytes));
 
             if (fileSize.TeraBytes > 1)
-            {
                 return fileSize.ToString("TB");
-            }
             else if (fileSize.GigaBytes > 1)
-            {
                 return fileSize.ToString("GB");
-            }
             else if (fileSize.MegaBytes > 1)
-            {
                 return fileSize.ToString("MB");
-            }
+            else if (fileSize.KiloBytes > 1)
+                return fileSize.ToString("KB");
             else
-            {
                 return fileSize.ToString("B");
-            }
-
         }
 
         public static async Task<Bitmap> GetImageBitmapFromUrl(string url)
@@ -118,6 +130,294 @@ namespace SeuSeriado.Utils
             return inSampleSize;
         }
 
+        public static long AvailableInternalMemorySize()
+        {
+            Java.IO.File path = Android.OS.Environment.DataDirectory;
+            StatFs stat = new StatFs(path.Path);
+            long blockSize, availableBlocks;
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.JellyBeanMr2)
+            {
+                blockSize = stat.BlockSizeLong;
+                availableBlocks = stat.AvailableBlocksLong;
+            }
+            else
+            {
+#pragma warning disable 0618
+                blockSize = stat.BlockSize;
+                availableBlocks = stat.AvailableBlocks;
+#pragma warning restore 0618
+            }
+            return availableBlocks * blockSize;
+        }
+
+        public static async void DownloadVideo(bool IsFromSearch, int Pos, Context context)
+        {
+            string Url;
+            byte[] Data;
+
+            WebClient request = new WebClient();
+
+            //AskPermission(context);
+
+            if (!IsFromSearch)
+                Url = VideoPageUrl(List.GetMainPageSeries.Series[Pos].Title);
+            else
+                Url = VideoPageUrl(List.GetSearch.Search[Pos].Title.Replace("Online,", "Online "));
+
+            Data = request.DownloadData(Url);
+            var response = Encoding.UTF8.GetString(Data);
+
+            var thumbDrawable = await GetThumbnailDrawable(context, response);
+            var VideoPlayerDataString = await GetVideoAsync(response, context);
+
+            try
+            {
+                if (!System.IO.Directory.Exists(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail"))
+                    System.IO.Directory.CreateDirectory(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail");
+
+                if (!IsFromSearch)
+                {
+                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetMainPageSeries.Series[Pos].Title), GetImageBytes(thumbDrawable));
+                    List.GetMainPageSeries.Series[Pos].EPThumb = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title);
+                }
+                else
+                {
+                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title), GetImageBytes(thumbDrawable));
+                    List.GetSearch.Search[Pos].EPThumb = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title);
+                }
+            }
+            catch { }
+
+            //if (context.CheckSelfPermission(Android.Manifest.Permission.ReadExternalStorage) == Android.Content.PM.Permission.Granted
+            //    && context.CheckSelfPermission(Android.Manifest.Permission.WriteExternalStorage) == Android.Content.PM.Permission.Granted)
+            //{
+                if (!System.IO.Directory.Exists(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles"))
+                    System.IO.Directory.CreateDirectory(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles");
+
+                try
+                {
+                    if (!IsFromSearch)
+                    {
+                        System.IO.File.WriteAllText(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", List.GetMainPageSeries.Series[Pos].Title + ".srt"), System.IO.File.ReadAllText(filePath));
+                    }
+                    else
+                    {
+                        System.IO.File.WriteAllText(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", List.GetSearch.Search[Pos].Title.Replace("Online,", "Online ") + ".srt"), System.IO.File.ReadAllText(filePath));
+                    }
+                }
+                catch { }
+
+                Intent downloader = new Intent(context, typeof(DownloadFilesService));
+                downloader.PutExtra("DownloadURL", VideoPlayerDataString);
+                downloader.PutExtra("DownloadSHOWID", Pos);
+                downloader.PutExtra("IsFromSearch", IsFromSearch);
+                //downloader.PutExtra("DownloadEPDuration", player.Duration);
+
+                if (serviceConnection == null)
+                {
+                    Intent serviceBinder = new Intent(context, typeof(DownloadFilesService));
+                    serviceConnection = new DownloadFileServiceConnection();
+                    context.ApplicationContext.BindService(serviceBinder, serviceConnection, Bind.AutoCreate);
+                }
+
+                ((Activity)context).Application.StartService(downloader);
+            //}
+            //else
+            //{
+            //    AskPermission(context);
+            //}
+        }
+
+        public static long GetSubtitle(string URL, bool IsHDVideo, bool RequestFileSize = false)
+        {
+            string SubtitleURL = "";
+            long length = 0;
+            if (!IsHDVideo)
+            {
+                try
+                {
+                    SubtitleURL = URL.Substring(URL.IndexOf("<a href='"));
+                    SubtitleURL = SubtitleURL.Substring(0, SubtitleURL.IndexOf("'>Baixar Legenda"));
+                    SubtitleURL = SubtitleURL.Replace("<a href='", "");
+                }
+                catch
+                {
+                    SubtitleURL = SubtitleURL.Substring(URL.IndexOf("seuseriado.com/player/legendas"));
+                    SubtitleURL = SubtitleURL.Substring(0, SubtitleURL.IndexOf("','"));
+                }
+                SubtitleURL = SubtitleURL.Replace(" ", "%20");
+            }
+            else
+            {
+                try
+                {
+                    SubtitleURL = URL.Substring(0, URL.IndexOf(".srt") + 4);
+                    SubtitleURL = SubtitleURL.Substring(SubtitleURL.IndexOf("'//seuseriado.com"));
+                    SubtitleURL = SubtitleURL.Replace("'//", "");
+                }
+                catch { }
+            }
+            WebClient client = new WebClient();
+            try
+            {
+                if (!RequestFileSize)
+                {
+                    if(SubtitleURL.StartsWith("http"))
+                        System.IO.File.WriteAllText(filePath, Encoding.UTF8.GetString(client.DownloadData(SubtitleURL)));
+                    else
+                        System.IO.File.WriteAllText(filePath, Encoding.UTF8.GetString(client.DownloadData("http://"+SubtitleURL)));
+                }
+                else
+                {
+                    client.OpenRead("http://" + SubtitleURL);
+                    length = long.Parse(client.ResponseHeaders["Content-Length"]);
+                }
+            }
+            catch { }
+            return length;
+        }
+
+        private static async Task<Drawable> GetThumbnailDrawable(Context context, string response)
+        {
+            Drawable d = null;
+            try
+            {
+                string ImgURL = "";
+                try
+                {
+                    ImgURL = response.Substring(response.IndexOf("https://player2.seuseriado.com/player/p.php?"));
+                    ImgURL = ImgURL.Substring(0, ImgURL.IndexOf("\""));
+                    if (ImgURL.Contains("https://imagecurl.com/"))
+                        ImgURL = ImgURL.Substring(ImgURL.IndexOf("https://imagecurl.com/"));
+                    else
+                        ImgURL = ImgURL.Substring(ImgURL.IndexOf("https://image.tmdb.org"));
+                    ImgURL = ImgURL.Substring(0, ImgURL.IndexOf("&prott"));
+                }
+                catch { }
+                var imageBitmap = await GetImageBitmapFromUrl(ImgURL);
+                d = new BitmapDrawable(context.Resources, imageBitmap);
+            }
+            catch { }
+            return d;
+        }
+
+        public static string VideoPageUrl(string Url)
+        {
+            if(Url.Contains("DUBLADO"))
+                Url = Url.Substring(0, Url.IndexOf("DUBLADO")+7);
+            else if(Url.Contains("LEGENDADO"))
+                Url = Url.Substring(0, Url.IndexOf("LEGENDADO")+9);
+            else if (Url.Contains("NACIONAL"))
+                Url = Url.Substring(0, Url.IndexOf("NACIONAL")+8);
+
+            Url = Regex.Replace(Url, "[éèëêð]", "e");
+            Url = Regex.Replace(Url, "[ÉÈËÊ]", "E");
+            Url = Regex.Replace(Url, "[àâä]", "a");
+            Url = Regex.Replace(Url, "[ÀÁÂÃÄÅ]", "A");
+            Url = Regex.Replace(Url, "[àáâãäå]", "a");
+            Url = Regex.Replace(Url, "[ÙÚÛÜ]", "U");
+            Url = Regex.Replace(Url, "[ùúûüµ]", "u");
+            Url = Regex.Replace(Url, "[òóôõöø]", "o");
+            Url = Regex.Replace(Url, "[ÒÓÔÕÖØ]", "O");
+            Url = Regex.Replace(Url, "[ìíîï]", "i");
+            Url = Regex.Replace(Url, "[ÌÍÎÏ]", "I");
+            Url = Regex.Replace(Url, @"\s+", " ");
+            Url = Url.Replace(",", "");
+            Url = Url.Replace(" (SEASON FINALE)", "");
+            Url = Url.Replace("ª", "a");
+            Url = Url.Replace("º", "o");
+            Url = Url.Replace("- ", "");
+            Url = Url.Replace(" ", "-");
+            Url = Url.Replace("SEM-LEGENDA", "legendado");
+            return "https://seuseriado.com/" + Url.ToLower();
+        }
+
+        public static void AskPermission(Context context)
+        {
+            if (context.CheckSelfPermission(Android.Manifest.Permission.ReadExternalStorage) != Android.Content.PM.Permission.Granted)
+            {
+                ActivityCompat.RequestPermissions((Activity)context, new string[] { Android.Manifest.Permission.ReadExternalStorage }, 87);
+            }
+            if (context.CheckSelfPermission(Android.Manifest.Permission.WriteExternalStorage) != Android.Content.PM.Permission.Granted)
+            {
+                ActivityCompat.RequestPermissions((Activity)context,new string[] { Android.Manifest.Permission.WriteExternalStorage }, 88);
+            }
+
+        }
+
+        private static async Task<string> GetVideoAsync(string response, Context context)
+        {
+            return await Task.Run(() => GetVideo(response, context));
+        }
+
+        private static string GetVideo(string response, Context context)
+        {
+            string URL;
+            string VideoPlayerDataString;
+            byte[] VideoPlayerData;
+
+            var request = new WebClient();
+            try
+            {
+                URL = response.Substring(response.IndexOf("http://player.seuseriado.com/player/p.php?"));
+                URL = URL.Substring(0, URL.IndexOf("');\"><span style=\"color: #429bd6;\">"));
+                VideoPlayerData = request.DownloadData(URL);
+                VideoPlayerDataString = Encoding.UTF8.GetString(VideoPlayerData);
+
+                if (VideoPlayerDataString.Contains("Error"))
+                {
+                    Console.WriteLine("SVideoPlayer {0}", "Error. Couldn't play HD video. Changing to SD Quality");
+                    throw new InvalidOperationException("Playback Error");
+                }
+                else
+                {
+                    GetSubtitle(VideoPlayerDataString, true);
+                    VideoPlayerDataString = VideoPlayerDataString.Substring(0, VideoPlayerDataString.IndexOf("','HD'"));
+                    try
+                    {
+                        VideoPlayerDataString = VideoPlayerDataString.Substring(VideoPlayerDataString.IndexOf("'SD','"));
+                        VideoPlayerDataString = VideoPlayerDataString.Replace("'SD','", "");
+                    }
+                    catch
+                    {
+                        VideoPlayerDataString = VideoPlayerDataString.Substring(VideoPlayerDataString.IndexOf("Play('"));
+                        VideoPlayerDataString = VideoPlayerDataString.Replace("Play('", "");
+                    }
+
+                    if (VideoPlayerDataString.Contains("http://videoshare.club/"))
+                    {
+                        HttpWebRequest requests = (HttpWebRequest)WebRequest.Create(VideoPlayerDataString);
+                        requests.AllowAutoRedirect = false;
+                        HttpWebResponse responses = (HttpWebResponse)requests.GetResponse();
+                        responses.Close();
+
+                        VideoPlayerDataString = responses.Headers["location"];
+                    }
+                }
+            }
+            catch
+            {
+                URL = response.Substring(response.IndexOf("https://player2.seuseriado.com/player/p.php?"));
+                URL = URL.Substring(0, URL.IndexOf("\" frameborder=\"0\""));
+                VideoPlayerData = request.DownloadData(URL);
+                VideoPlayerDataString = Encoding.UTF8.GetString(VideoPlayerData);
+
+                GetSubtitle(VideoPlayerDataString, false);
+
+                if (VideoPlayerDataString.Contains("Error"))
+                {
+                    Toast.MakeText(context, "Esse título não está disponivel no momento. Por favor, tente novamente mais tarde.", ToastLength.Long);
+                }
+                else
+                {
+                    VideoPlayerDataString = VideoPlayerDataString.Substring(0, VideoPlayerDataString.IndexOf("','SD'"));
+                    VideoPlayerDataString = VideoPlayerDataString.Substring(VideoPlayerDataString.IndexOf("Play('"));
+                    VideoPlayerDataString = VideoPlayerDataString.Replace("Play('", "");
+                }
+            }
+            return VideoPlayerDataString;
+        }
+
         public static string Download(int page, string search = "")
         {
             byte[] responseB;
@@ -171,6 +471,8 @@ namespace SeuSeriado.Utils
                     response = response.Replace("l\">", "l\",");
                     response = response.Replace("i\">", "i\",");
                     response = response.Replace("x\">", "x\",>");
+                    response = Regex.Replace(response, " PARTE \\d*\">", "\",>");
+                    response = response.Replace("SEM LEGENDA", "LEGENDADO");
 
                     do
                     {
@@ -234,6 +536,8 @@ namespace SeuSeriado.Utils
                     response = response.Replace("l\">", "l\",");
                     response = response.Replace("i\">", "i\",");
                     response = response.Replace("x\">", "x\",>");
+                    response = Regex.Replace(response, " PARTE \\d*\">", "\",>");
+                    response = response.Replace("SEM LEGENDA", "LEGENDADO");
 
                     do
                     {

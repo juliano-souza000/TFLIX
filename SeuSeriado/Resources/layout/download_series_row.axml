@@ -2,18 +2,48 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
+	android:background="@drawable/ripple"
     android:layout_height="100dp">
+	<RelativeLayout
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_margin="5dp"
+		android:id="@+id/thumbnaillayout_dpg_ep">
+	<RelativeLayout
+        android:layout_width="150dp"
+        android:layout_height="100dp"
+		android:id="@+id/imageframe_dpg_ep">
 	<ImageView
 		android:id="@+id/thumbnail_dpg_ep"
 		android:layout_width="150dp"
 		android:layout_height="100dp"
-		android:layout_margin="5dp"
-		android:background="#ff505050" />
+		android:background="#ff505050"
+		android:cropToPadding="true"
+		android:scaleType="centerInside"
+		android:layout_centerInParent="true"/>
+	</RelativeLayout>
+		<ImageView
+			android:id="@+id/play_dpg_ep"
+			android:src="@drawable/play_circle_outline"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_centerInParent="true"
+			android:layout_alignBaseline="@id/thumbnail_dpg_ep"
+			android:layout_centerHorizontal="true"/>
+	<ProgressBar
+		android:id="@+id/timewatched_progressbar"
+		style="@android:style/Widget.ProgressBar.Horizontal"
+		android:layout_width="150dp"
+		android:layout_height="3dp"
+		android:layout_alignParentBottom="true"
+		android:indeterminate="false"
+		android:progressDrawable="@drawable/progressbar_nobackground"/>
+		</RelativeLayout>
 	<RelativeLayout
 		android:layout_centerVertical="true"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:layout_toRightOf="@id/thumbnail_dpg_ep">
+		android:layout_toRightOf="@id/thumbnaillayout_dpg_ep">
 	<TextView
 		android:text="TITLE"
 		android:layout_width="wrap_content"
@@ -41,7 +71,31 @@
 		android:id="@+id/episodes_dpg_selector"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_marginRight="5dp"
+		android:layout_marginRight="15dp"
+		android:layout_centerVertical="true"
+		android:layout_alignParentRight="true"
+		android:visibility="gone"/>
+	<ImageView
+		android:id="@+id/episodes_dpg_ep_dp"
+		android:src="@drawable/baseline_mobile_friendly_24"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginRight="21dp"
+		android:layout_centerVertical="true"
+		android:layout_alignParentRight="true"
+		android:visibility="gone"
+		android:tint="#0171F0"/>
+	<ProgressBar
+		android:id="@+id/download_progressbar"
+		style="?android:attr/progressBarStyleHorizontal"
+		android:layout_width="24dp"
+		android:layout_height="24dp"
+		android:layout_marginRight="20dp"
+		android:indeterminate="false"
+		android:max="100"
+		android:progress="0"
+		android:rotation="-90"
+		android:progressDrawable="@drawable/pie_progressbar"
 		android:layout_centerVertical="true"
 		android:layout_alignParentRight="true"
 		android:visibility="gone"/>

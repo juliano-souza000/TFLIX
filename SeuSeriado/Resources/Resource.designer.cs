@@ -2335,152 +2335,170 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f020053
 			public const int avd_hide_password = 2130837587;
 			
-			// aapt resource value: 0x7f02007f
-			public const int avd_hide_password_1 = 2130837631;
+			// aapt resource value: 0x7f020085
+			public const int avd_hide_password_1 = 2130837637;
 			
-			// aapt resource value: 0x7f020080
-			public const int avd_hide_password_2 = 2130837632;
+			// aapt resource value: 0x7f020086
+			public const int avd_hide_password_2 = 2130837638;
 			
-			// aapt resource value: 0x7f020081
-			public const int avd_hide_password_3 = 2130837633;
+			// aapt resource value: 0x7f020087
+			public const int avd_hide_password_3 = 2130837639;
 			
 			// aapt resource value: 0x7f020054
 			public const int avd_show_password = 2130837588;
 			
-			// aapt resource value: 0x7f020082
-			public const int avd_show_password_1 = 2130837634;
+			// aapt resource value: 0x7f020088
+			public const int avd_show_password_1 = 2130837640;
 			
-			// aapt resource value: 0x7f020083
-			public const int avd_show_password_2 = 2130837635;
+			// aapt resource value: 0x7f020089
+			public const int avd_show_password_2 = 2130837641;
 			
-			// aapt resource value: 0x7f020084
-			public const int avd_show_password_3 = 2130837636;
+			// aapt resource value: 0x7f02008a
+			public const int avd_show_password_3 = 2130837642;
 			
 			// aapt resource value: 0x7f020055
 			public const int baseline_close_24 = 2130837589;
 			
 			// aapt resource value: 0x7f020056
-			public const int baseline_cloud_download_24 = 2130837590;
+			public const int baseline_cloud_done_24 = 2130837590;
 			
 			// aapt resource value: 0x7f020057
-			public const int baseline_cloud_download_on = 2130837591;
+			public const int baseline_cloud_download_24 = 2130837591;
 			
 			// aapt resource value: 0x7f020058
-			public const int baseline_delete_24 = 2130837592;
+			public const int baseline_cloud_download_on = 2130837592;
 			
 			// aapt resource value: 0x7f020059
-			public const int baseline_downloads = 2130837593;
+			public const int baseline_delete_24 = 2130837593;
 			
 			// aapt resource value: 0x7f02005a
-			public const int baseline_fullscreen_24 = 2130837594;
+			public const int baseline_downloads = 2130837594;
 			
 			// aapt resource value: 0x7f02005b
-			public const int baseline_fullscreen_exit_24 = 2130837595;
+			public const int baseline_fullscreen_24 = 2130837595;
 			
 			// aapt resource value: 0x7f02005c
-			public const int baseline_hd_off = 2130837596;
+			public const int baseline_fullscreen_exit_24 = 2130837596;
 			
 			// aapt resource value: 0x7f02005d
-			public const int baseline_hd_on = 2130837597;
+			public const int baseline_hd_off = 2130837597;
 			
 			// aapt resource value: 0x7f02005e
-			public const int baseline_home = 2130837598;
+			public const int baseline_hd_on = 2130837598;
 			
 			// aapt resource value: 0x7f02005f
-			public const int baseline_keyboard_arrow_right_24 = 2130837599;
+			public const int baseline_home = 2130837599;
 			
 			// aapt resource value: 0x7f020060
-			public const int baseline_pause_24 = 2130837600;
+			public const int baseline_keyboard_arrow_right_24 = 2130837600;
 			
 			// aapt resource value: 0x7f020061
-			public const int baseline_play_arrow_24 = 2130837601;
+			public const int baseline_mobile_friendly_24 = 2130837601;
 			
 			// aapt resource value: 0x7f020062
-			public const int baseline_search = 2130837602;
+			public const int baseline_pause_24 = 2130837602;
 			
 			// aapt resource value: 0x7f020063
-			public const int baseline_signal_wifi_off_24 = 2130837603;
+			public const int baseline_play_arrow_24 = 2130837603;
 			
 			// aapt resource value: 0x7f020064
-			public const int baseline_subtitles_24 = 2130837604;
+			public const int baseline_search = 2130837604;
 			
 			// aapt resource value: 0x7f020065
-			public const int baseline_subtitles_off = 2130837605;
+			public const int baseline_signal_wifi_off_24 = 2130837605;
 			
 			// aapt resource value: 0x7f020066
-			public const int bottom_item_background_color = 2130837606;
+			public const int baseline_subtitles_24 = 2130837606;
 			
 			// aapt resource value: 0x7f020067
-			public const int circular_progressbar = 2130837607;
+			public const int baseline_subtitles_off = 2130837607;
 			
 			// aapt resource value: 0x7f020068
-			public const int circular_progressbar_background = 2130837608;
+			public const int bottom_item_background_color = 2130837608;
 			
 			// aapt resource value: 0x7f020069
-			public const int design_bottom_navigation_item_background = 2130837609;
+			public const int circular_progressbar = 2130837609;
 			
 			// aapt resource value: 0x7f02006a
-			public const int design_fab_background = 2130837610;
+			public const int circular_progressbar_background = 2130837610;
 			
 			// aapt resource value: 0x7f02006b
-			public const int design_ic_visibility = 2130837611;
+			public const int design_bottom_navigation_item_background = 2130837611;
 			
 			// aapt resource value: 0x7f02006c
-			public const int design_ic_visibility_off = 2130837612;
+			public const int design_fab_background = 2130837612;
 			
 			// aapt resource value: 0x7f02006d
-			public const int design_password_eye = 2130837613;
+			public const int design_ic_visibility = 2130837613;
 			
 			// aapt resource value: 0x7f02006e
-			public const int design_snackbar_background = 2130837614;
+			public const int design_ic_visibility_off = 2130837614;
 			
 			// aapt resource value: 0x7f02006f
-			public const int dowload_progressbar = 2130837615;
+			public const int design_password_eye = 2130837615;
 			
 			// aapt resource value: 0x7f020070
-			public const int navigation_empty_icon = 2130837616;
+			public const int design_snackbar_background = 2130837616;
 			
 			// aapt resource value: 0x7f020071
-			public const int notification_action_background = 2130837617;
+			public const int dowload_progressbar = 2130837617;
 			
 			// aapt resource value: 0x7f020072
-			public const int notification_bg = 2130837618;
+			public const int navigation_empty_icon = 2130837618;
 			
 			// aapt resource value: 0x7f020073
-			public const int notification_bg_low = 2130837619;
+			public const int notification_action_background = 2130837619;
 			
 			// aapt resource value: 0x7f020074
-			public const int notification_bg_low_normal = 2130837620;
+			public const int notification_bg = 2130837620;
 			
 			// aapt resource value: 0x7f020075
-			public const int notification_bg_low_pressed = 2130837621;
+			public const int notification_bg_low = 2130837621;
 			
 			// aapt resource value: 0x7f020076
-			public const int notification_bg_normal = 2130837622;
+			public const int notification_bg_low_normal = 2130837622;
 			
 			// aapt resource value: 0x7f020077
-			public const int notification_bg_normal_pressed = 2130837623;
+			public const int notification_bg_low_pressed = 2130837623;
 			
 			// aapt resource value: 0x7f020078
-			public const int notification_icon_background = 2130837624;
-			
-			// aapt resource value: 0x7f02007d
-			public const int notification_template_icon_bg = 2130837629;
-			
-			// aapt resource value: 0x7f02007e
-			public const int notification_template_icon_low_bg = 2130837630;
+			public const int notification_bg_normal = 2130837624;
 			
 			// aapt resource value: 0x7f020079
-			public const int notification_tile_bg = 2130837625;
+			public const int notification_bg_normal_pressed = 2130837625;
 			
 			// aapt resource value: 0x7f02007a
-			public const int notify_panel_notification_icon_bg = 2130837626;
+			public const int notification_icon_background = 2130837626;
+			
+			// aapt resource value: 0x7f020083
+			public const int notification_template_icon_bg = 2130837635;
+			
+			// aapt resource value: 0x7f020084
+			public const int notification_template_icon_low_bg = 2130837636;
 			
 			// aapt resource value: 0x7f02007b
-			public const int tooltip_frame_dark = 2130837627;
+			public const int notification_tile_bg = 2130837627;
 			
 			// aapt resource value: 0x7f02007c
-			public const int tooltip_frame_light = 2130837628;
+			public const int notify_panel_notification_icon_bg = 2130837628;
+			
+			// aapt resource value: 0x7f02007d
+			public const int pie_progressbar = 2130837629;
+			
+			// aapt resource value: 0x7f02007e
+			public const int play_circle_outline = 2130837630;
+			
+			// aapt resource value: 0x7f02007f
+			public const int progressbar_nobackground = 2130837631;
+			
+			// aapt resource value: 0x7f020080
+			public const int ripple = 2130837632;
+			
+			// aapt resource value: 0x7f020081
+			public const int tooltip_frame_dark = 2130837633;
+			
+			// aapt resource value: 0x7f020082
+			public const int tooltip_frame_light = 2130837634;
 			
 			static Drawable()
 			{
@@ -2513,8 +2531,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090037
 			public const int SYM = 2131296311;
 			
-			// aapt resource value: 0x7f0900be
-			public const int action0 = 2131296446;
+			// aapt resource value: 0x7f0900c6
+			public const int action0 = 2131296454;
 			
 			// aapt resource value: 0x7f09007c
 			public const int action_bar = 2131296380;
@@ -2537,17 +2555,17 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f09005a
 			public const int action_bar_title = 2131296346;
 			
-			// aapt resource value: 0x7f0900bb
-			public const int action_container = 2131296443;
+			// aapt resource value: 0x7f0900c3
+			public const int action_container = 2131296451;
 			
 			// aapt resource value: 0x7f09007d
 			public const int action_context_bar = 2131296381;
 			
-			// aapt resource value: 0x7f0900c2
-			public const int action_divider = 2131296450;
+			// aapt resource value: 0x7f0900ca
+			public const int action_divider = 2131296458;
 			
-			// aapt resource value: 0x7f0900bc
-			public const int action_image = 2131296444;
+			// aapt resource value: 0x7f0900c4
+			public const int action_image = 2131296452;
 			
 			// aapt resource value: 0x7f090003
 			public const int action_menu_divider = 2131296259;
@@ -2564,11 +2582,11 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f09005c
 			public const int action_mode_close_button = 2131296348;
 			
-			// aapt resource value: 0x7f0900bd
-			public const int action_text = 2131296445;
+			// aapt resource value: 0x7f0900c5
+			public const int action_text = 2131296453;
 			
-			// aapt resource value: 0x7f0900cb
-			public const int actions = 2131296459;
+			// aapt resource value: 0x7f0900d3
+			public const int actions = 2131296467;
 			
 			// aapt resource value: 0x7f09005d
 			public const int activity_chooser_view_content = 2131296349;
@@ -2606,8 +2624,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090063
 			public const int buttonPanel = 2131296355;
 			
-			// aapt resource value: 0x7f0900bf
-			public const int cancel_action = 2131296447;
+			// aapt resource value: 0x7f0900c7
+			public const int cancel_action = 2131296455;
 			
 			// aapt resource value: 0x7f090045
 			public const int center = 2131296325;
@@ -2621,8 +2639,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090073
 			public const int checkbox = 2131296371;
 			
-			// aapt resource value: 0x7f0900c7
-			public const int chronometer = 2131296455;
+			// aapt resource value: 0x7f0900cf
+			public const int chronometer = 2131296463;
 			
 			// aapt resource value: 0x7f09004e
 			public const int clip_horizontal = 2131296334;
@@ -2654,8 +2672,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090060
 			public const int default_activity_button = 2131296352;
 			
-			// aapt resource value: 0x7f0900de
-			public const int delete_appbar = 2131296478;
+			// aapt resource value: 0x7f0900e7
+			public const int delete_appbar = 2131296487;
 			
 			// aapt resource value: 0x7f090092
 			public const int design_bottom_sheet = 2131296402;
@@ -2675,14 +2693,20 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090020
 			public const int disableHome = 2131296288;
 			
-			// aapt resource value: 0x7f0900ac
-			public const int downloaded_episodes = 2131296428;
+			// aapt resource value: 0x7f0900b1
+			public const int download_progressbar = 2131296433;
 			
-			// aapt resource value: 0x7f0900ab
-			public const int downloaded_episodes_toolbar = 2131296427;
+			// aapt resource value: 0x7f0900db
+			public const int download_spg = 2131296475;
 			
-			// aapt resource value: 0x7f0900ad
-			public const int downloaded_series = 2131296429;
+			// aapt resource value: 0x7f0900b4
+			public const int downloaded_episodes = 2131296436;
+			
+			// aapt resource value: 0x7f0900b3
+			public const int downloaded_episodes_toolbar = 2131296435;
+			
+			// aapt resource value: 0x7f0900b5
+			public const int downloaded_series = 2131296437;
 			
 			// aapt resource value: 0x7f09009e
 			public const int downloadn_perc = 2131296414;
@@ -2705,8 +2729,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f09009f
 			public const int downloadn_titles = 2131296415;
 			
-			// aapt resource value: 0x7f0900aa
-			public const int downloads_showheader = 2131296426;
+			// aapt resource value: 0x7f0900b2
+			public const int downloads_showheader = 2131296434;
 			
 			// aapt resource value: 0x7f09007e
 			public const int edit_query = 2131296382;
@@ -2714,8 +2738,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090030
 			public const int end = 2131296304;
 			
-			// aapt resource value: 0x7f0900cd
-			public const int end_padder = 2131296461;
+			// aapt resource value: 0x7f0900d5
+			public const int end_padder = 2131296469;
 			
 			// aapt resource value: 0x7f09003f
 			public const int enterAlways = 2131296319;
@@ -2723,14 +2747,17 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090040
 			public const int enterAlwaysCollapsed = 2131296320;
 			
-			// aapt resource value: 0x7f0900a4
-			public const int episodes_dpg = 2131296420;
+			// aapt resource value: 0x7f0900a5
+			public const int episodes_dpg = 2131296421;
 			
-			// aapt resource value: 0x7f0900a8
-			public const int episodes_dpg_ep = 2131296424;
+			// aapt resource value: 0x7f0900ae
+			public const int episodes_dpg_ep = 2131296430;
 			
-			// aapt resource value: 0x7f0900a9
-			public const int episodes_dpg_selector = 2131296425;
+			// aapt resource value: 0x7f0900b0
+			public const int episodes_dpg_ep_dp = 2131296432;
+			
+			// aapt resource value: 0x7f0900af
+			public const int episodes_dpg_selector = 2131296431;
 			
 			// aapt resource value: 0x7f090041
 			public const int exitUntilCollapsed = 2131296321;
@@ -2768,8 +2795,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090062
 			public const int icon = 2131296354;
 			
-			// aapt resource value: 0x7f0900cc
-			public const int icon_group = 2131296460;
+			// aapt resource value: 0x7f0900d4
+			public const int icon_group = 2131296468;
 			
 			// aapt resource value: 0x7f09003a
 			public const int ifRoom = 2131296314;
@@ -2777,8 +2804,11 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f09005f
 			public const int image = 2131296351;
 			
-			// aapt resource value: 0x7f0900c8
-			public const int info = 2131296456;
+			// aapt resource value: 0x7f0900a9
+			public const int imageframe_dpg_ep = 2131296425;
+			
+			// aapt resource value: 0x7f0900d0
+			public const int info = 2131296464;
 			
 			// aapt resource value: 0x7f090059
 			public const int italic = 2131296345;
@@ -2807,41 +2837,41 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f09008c
 			public const int main_frame = 2131296396;
 			
-			// aapt resource value: 0x7f0900da
-			public const int masked = 2131296474;
+			// aapt resource value: 0x7f0900e3
+			public const int masked = 2131296483;
 			
-			// aapt resource value: 0x7f0900d4
-			public const int mcontroller = 2131296468;
+			// aapt resource value: 0x7f0900dd
+			public const int mcontroller = 2131296477;
 			
-			// aapt resource value: 0x7f0900b7
-			public const int mcontroller_currenttime = 2131296439;
+			// aapt resource value: 0x7f0900bf
+			public const int mcontroller_currenttime = 2131296447;
 			
-			// aapt resource value: 0x7f0900b4
-			public const int mcontroller_download = 2131296436;
+			// aapt resource value: 0x7f0900bc
+			public const int mcontroller_download = 2131296444;
 			
-			// aapt resource value: 0x7f0900b8
-			public const int mcontroller_endtime = 2131296440;
+			// aapt resource value: 0x7f0900c0
+			public const int mcontroller_endtime = 2131296448;
 			
-			// aapt resource value: 0x7f0900b5
-			public const int mcontroller_hd = 2131296437;
+			// aapt resource value: 0x7f0900bd
+			public const int mcontroller_hd = 2131296445;
 			
-			// aapt resource value: 0x7f0900b6
-			public const int mcontroller_playpause = 2131296438;
-			
-			// aapt resource value: 0x7f0900b9
-			public const int mcontroller_seekbar = 2131296441;
-			
-			// aapt resource value: 0x7f0900b3
-			public const int mcontroller_subtitle = 2131296435;
-			
-			// aapt resource value: 0x7f0900b2
-			public const int mcontroller_title = 2131296434;
+			// aapt resource value: 0x7f0900be
+			public const int mcontroller_playpause = 2131296446;
 			
 			// aapt resource value: 0x7f0900c1
-			public const int media_actions = 2131296449;
+			public const int mcontroller_seekbar = 2131296449;
 			
-			// aapt resource value: 0x7f0900d3
-			public const int message = 2131296467;
+			// aapt resource value: 0x7f0900bb
+			public const int mcontroller_subtitle = 2131296443;
+			
+			// aapt resource value: 0x7f0900ba
+			public const int mcontroller_title = 2131296442;
+			
+			// aapt resource value: 0x7f0900c9
+			public const int media_actions = 2131296457;
+			
+			// aapt resource value: 0x7f0900dc
+			public const int message = 2131296476;
 			
 			// aapt resource value: 0x7f090031
 			public const int middle = 2131296305;
@@ -2852,14 +2882,14 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090028
 			public const int multiply = 2131296296;
 			
-			// aapt resource value: 0x7f0900dd
-			public const int nav_downloads = 2131296477;
+			// aapt resource value: 0x7f0900e6
+			public const int nav_downloads = 2131296486;
 			
-			// aapt resource value: 0x7f0900dc
-			public const int nav_main = 2131296476;
+			// aapt resource value: 0x7f0900e5
+			public const int nav_main = 2131296485;
 			
-			// aapt resource value: 0x7f0900db
-			public const int nav_search = 2131296475;
+			// aapt resource value: 0x7f0900e4
+			public const int nav_search = 2131296484;
 			
 			// aapt resource value: 0x7f090095
 			public const int navigation_header_container = 2131296405;
@@ -2873,17 +2903,17 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f09001e
 			public const int normal = 2131296286;
 			
-			// aapt resource value: 0x7f0900ba
-			public const int nosignal = 2131296442;
+			// aapt resource value: 0x7f0900c2
+			public const int nosignal = 2131296450;
 			
-			// aapt resource value: 0x7f0900ca
-			public const int notification_background = 2131296458;
+			// aapt resource value: 0x7f0900d2
+			public const int notification_background = 2131296466;
 			
-			// aapt resource value: 0x7f0900c4
-			public const int notification_main_column = 2131296452;
+			// aapt resource value: 0x7f0900cc
+			public const int notification_main_column = 2131296460;
 			
-			// aapt resource value: 0x7f0900c3
-			public const int notification_main_column_container = 2131296451;
+			// aapt resource value: 0x7f0900cb
+			public const int notification_main_column_container = 2131296459;
 			
 			// aapt resource value: 0x7f09004c
 			public const int parallax = 2131296332;
@@ -2897,23 +2927,26 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f09004d
 			public const int pin = 2131296333;
 			
-			// aapt resource value: 0x7f0900d8
-			public const int player = 2131296472;
+			// aapt resource value: 0x7f0900ab
+			public const int play_dpg_ep = 2131296427;
 			
-			// aapt resource value: 0x7f0900d6
-			public const int player_loading = 2131296470;
+			// aapt resource value: 0x7f0900e1
+			public const int player = 2131296481;
 			
-			// aapt resource value: 0x7f0900d5
-			public const int player_subtitle = 2131296469;
+			// aapt resource value: 0x7f0900df
+			public const int player_loading = 2131296479;
 			
-			// aapt resource value: 0x7f0900d7
-			public const int player_thumbnail = 2131296471;
+			// aapt resource value: 0x7f0900de
+			public const int player_subtitle = 2131296478;
 			
-			// aapt resource value: 0x7f0900af
-			public const int popular_series = 2131296431;
+			// aapt resource value: 0x7f0900e0
+			public const int player_thumbnail = 2131296480;
 			
-			// aapt resource value: 0x7f0900ae
-			public const int popular_series_loading = 2131296430;
+			// aapt resource value: 0x7f0900b7
+			public const int popular_series = 2131296439;
+			
+			// aapt resource value: 0x7f0900b6
+			public const int popular_series_loading = 2131296438;
 			
 			// aapt resource value: 0x7f090006
 			public const int progress_circular = 2131296262;
@@ -2924,17 +2957,20 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090075
 			public const int radio = 2131296373;
 			
-			// aapt resource value: 0x7f0900cf
-			public const int result_series_loading = 2131296463;
+			// aapt resource value: 0x7f0900a3
+			public const int relative_dpg = 2131296419;
+			
+			// aapt resource value: 0x7f0900d7
+			public const int result_series_loading = 2131296471;
 			
 			// aapt resource value: 0x7f09004a
 			public const int right = 2131296330;
 			
-			// aapt resource value: 0x7f0900c9
-			public const int right_icon = 2131296457;
+			// aapt resource value: 0x7f0900d1
+			public const int right_icon = 2131296465;
 			
-			// aapt resource value: 0x7f0900c5
-			public const int right_side = 2131296453;
+			// aapt resource value: 0x7f0900cd
+			public const int right_side = 2131296461;
 			
 			// aapt resource value: 0x7f09000c
 			public const int save_image_matrix = 2131296268;
@@ -2963,8 +2999,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090055
 			public const int scrollable = 2131296341;
 			
-			// aapt resource value: 0x7f0900ce
-			public const int search = 2131296462;
+			// aapt resource value: 0x7f0900d6
+			public const int search = 2131296470;
 			
 			// aapt resource value: 0x7f090080
 			public const int search_badge = 2131296384;
@@ -2990,8 +3026,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090084
 			public const int search_plate = 2131296388;
 			
-			// aapt resource value: 0x7f0900d0
-			public const int search_series = 2131296464;
+			// aapt resource value: 0x7f0900d8
+			public const int search_series = 2131296472;
 			
 			// aapt resource value: 0x7f090085
 			public const int search_src_text = 2131296389;
@@ -2999,8 +3035,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090089
 			public const int search_voice_btn = 2131296393;
 			
-			// aapt resource value: 0x7f0900a5
-			public const int see_more = 2131296421;
+			// aapt resource value: 0x7f0900a7
+			public const int see_more = 2131296423;
 			
 			// aapt resource value: 0x7f09008a
 			public const int select_dialog_listview = 2131296394;
@@ -3047,8 +3083,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f09004b
 			public const int start = 2131296331;
 			
-			// aapt resource value: 0x7f0900c0
-			public const int status_bar_latest_event_content = 2131296448;
+			// aapt resource value: 0x7f0900c8
+			public const int status_bar_latest_event_content = 2131296456;
 			
 			// aapt resource value: 0x7f090076
 			public const int submenuarrow = 2131296374;
@@ -3086,17 +3122,23 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f0900a2
 			public const int thumbnail_dpg = 2131296418;
 			
-			// aapt resource value: 0x7f0900a6
-			public const int thumbnail_dpg_ep = 2131296422;
+			// aapt resource value: 0x7f0900aa
+			public const int thumbnail_dpg_ep = 2131296426;
 			
-			// aapt resource value: 0x7f0900b0
-			public const int thumbnail_mpg = 2131296432;
+			// aapt resource value: 0x7f0900b8
+			public const int thumbnail_mpg = 2131296440;
 			
-			// aapt resource value: 0x7f0900d1
-			public const int thumbnail_spg = 2131296465;
+			// aapt resource value: 0x7f0900d9
+			public const int thumbnail_spg = 2131296473;
 			
-			// aapt resource value: 0x7f0900c6
-			public const int time = 2131296454;
+			// aapt resource value: 0x7f0900a8
+			public const int thumbnaillayout_dpg_ep = 2131296424;
+			
+			// aapt resource value: 0x7f0900ce
+			public const int time = 2131296462;
+			
+			// aapt resource value: 0x7f0900ac
+			public const int timewatched_progressbar = 2131296428;
 			
 			// aapt resource value: 0x7f09001c
 			public const int title = 2131296284;
@@ -3104,17 +3146,17 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090071
 			public const int titleDividerNoCustom = 2131296369;
 			
-			// aapt resource value: 0x7f0900a3
-			public const int title_dpg = 2131296419;
+			// aapt resource value: 0x7f0900a4
+			public const int title_dpg = 2131296420;
 			
-			// aapt resource value: 0x7f0900a7
-			public const int title_dpg_ep = 2131296423;
+			// aapt resource value: 0x7f0900ad
+			public const int title_dpg_ep = 2131296429;
 			
-			// aapt resource value: 0x7f0900b1
-			public const int title_mpg = 2131296433;
+			// aapt resource value: 0x7f0900b9
+			public const int title_mpg = 2131296441;
 			
-			// aapt resource value: 0x7f0900d2
-			public const int title_spg = 2131296466;
+			// aapt resource value: 0x7f0900da
+			public const int title_spg = 2131296474;
 			
 			// aapt resource value: 0x7f09006f
 			public const int title_template = 2131296367;
@@ -3143,6 +3185,9 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090013
 			public const int transition_transform = 2131296275;
 			
+			// aapt resource value: 0x7f0900a6
+			public const int type_dpg = 2131296422;
+			
 			// aapt resource value: 0x7f09002d
 			public const int uniform = 2131296301;
 			
@@ -3155,8 +3200,8 @@ namespace SeuSeriado
 			// aapt resource value: 0x7f090016
 			public const int view_offset_helper = 2131296278;
 			
-			// aapt resource value: 0x7f0900d9
-			public const int visible = 2131296473;
+			// aapt resource value: 0x7f0900e2
+			public const int visible = 2131296482;
 			
 			// aapt resource value: 0x7f09003c
 			public const int withText = 2131296316;
@@ -3484,10 +3529,7 @@ namespace SeuSeriado
 			public const int ic_launcher = 2130903041;
 			
 			// aapt resource value: 0x7f030002
-			public const int ic_launcher_foreground = 2130903042;
-			
-			// aapt resource value: 0x7f030003
-			public const int ic_launcher_round = 2130903043;
+			public const int ic_launcher_round = 2130903042;
 			
 			static Mipmap()
 			{

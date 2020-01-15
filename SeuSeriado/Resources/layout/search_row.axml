@@ -12,9 +12,10 @@
 		android:background="#ff505050" />
 	<RelativeLayout
 		android:layout_centerVertical="true"
-		android:layout_width="match_parent"
+		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_toRightOf="@id/thumbnail_spg">
+		android:layout_toRightOf="@id/thumbnail_spg"
+		android:layout_marginRight="40dp">
 		<TextView
 			android:text="TITLE"
 			android:layout_width="wrap_content"
@@ -24,7 +25,14 @@
 			android:textSize="7.5pt"
 			android:textColor="#fff"
 			android:singleLine="true"
-			android:layout_marginLeft="5dp"
-			android:layout_marginRight="32dp"/>
+			android:layout_marginLeft="5dp"/>
 	</RelativeLayout>
+	<ImageView
+		android:id="@+id/download_spg"
+		android:src="@drawable/baseline_cloud_download_24"
+		android:layout_width="28dp"
+		android:layout_height="28dp"
+		android:layout_marginRight="15dp"
+		android:layout_centerVertical="true"
+		android:layout_alignParentRight="true" />
 </RelativeLayout>

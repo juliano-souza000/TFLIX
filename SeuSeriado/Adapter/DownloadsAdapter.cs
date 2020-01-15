@@ -15,6 +15,8 @@ using Android.Util;
 using Android.Views;
 using Android.Widget;
 using ByteSizeLib;
+using Java.Lang;
+using Square.Picasso;
 
 namespace SeuSeriado.Adapter
 {
@@ -37,6 +39,7 @@ namespace SeuSeriado.Adapter
             public ImageView Image { get; set; }
             public TextView Title { get; set; }
             public TextView EPMB { get; set; }
+            public TextView Type { get; set; }
 
             public DownloadsAdapterHolder(View view) : base(view)
             {
@@ -50,27 +53,38 @@ namespace SeuSeriado.Adapter
             ImageView image = row.FindViewById<ImageView>(Resource.Id.thumbnail_dpg);
             TextView title = row.FindViewById<TextView>(Resource.Id.title_dpg);
             TextView epmb = row.FindViewById<TextView>(Resource.Id.episodes_dpg);
+            TextView type = row.FindViewById<TextView>(Resource.Id.type_dpg);
 
             row.Click += Row_Click;
 
             image.SetScaleType(ImageView.ScaleType.CenterCrop);
-            DownloadsAdapterHolder view = new DownloadsAdapterHolder(row) { Image = image, Title = title, EPMB = epmb };
+            DownloadsAdapterHolder view = new DownloadsAdapterHolder(row) { Image = image, Title = title, EPMB = epmb, Type = type };
             return view;
         }
 
         public override long GetItemId(int position) { return base.GetItemId(position); }
 
-        public override async void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
+        public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
         {
             DownloadsAdapterHolder Holder = holder as DownloadsAdapterHolder;
 
-            List.GetDownloads.Series[position].TotalBytes = (List.GetDownloads.Series[position].Episodes.Sum(x => Convert.ToInt64(x.TotalBytesEP)));
+            List.GetDownloads.Series[position].TotalBytes = (List.GetDownloads.Series[position].Episodes.Sum(x => Convert.ToInt64(x.Bytes)));
 
-            try
+            if (List.GetDownloads.Series[position].IsSubtitled)
+                Holder.Type.Text = "Legendado";
+            else
+                Holder.Type.Text = "Dublado";
+
+            if (!string.IsNullOrWhiteSpace(List.GetDownloads.Series[position].ShowThumb))
             {
-                Holder.Image.SetImageBitmap(await GetBitmapFromStorageAsync(List.GetDownloads.Series[position].ShowThumb));
+                try
+                {
+                    //Holder.Image.SetImageBitmap(await GetBitmapFromStorageAsync(List.GetDownloads.Series[position].ShowThumb));
+                    Picasso.With(context).Load(new Java.IO.File(List.GetDownloads.Series[position].ShowThumb)).Into(Holder.Image);
+                }
+                catch { }
             }
-            catch { }
+            
             Holder.Title.Text = Regex.Replace(List.GetDownloads.Series[position].Show, @"\b([a-z])", m => m.Value.ToUpper());
 
             if (List.GetDownloads.Series[position].Episodes.Where(row => row.Duration > 0).Count() == 1)
@@ -79,6 +93,19 @@ namespace SeuSeriado.Adapter
                 Holder.EPMB.Text = string.Format("{0} Episódios | {1}", List.GetDownloads.Series[position].Episodes.Where(row => row.Duration > 0).Count(), Utils.Utils.Size(List.GetDownloads.Series[position].TotalBytes));
 
         }
+
+        public override void OnViewRecycled(Java.Lang.Object holder)
+        {
+            try
+            {
+                DownloadsAdapterHolder Holder = holder as DownloadsAdapterHolder;
+                Holder.Image.SetImageDrawable(null);
+                Picasso.With(context).CancelRequest(Holder.Image);
+            }
+            catch { }
+            base.OnViewRecycled(holder);
+        }
+
 
         private void Row_Click(object sender, EventArgs e)
         {

@@ -78,7 +78,7 @@ namespace SeuSeriado.Fragments
         public override void OnResume()
         {
             base.OnResume();
-            Activity.Window.SetSoftInputMode(SoftInput.StateHidden);
+            Search.ClearFocus();
         }
 
         private void Search_QueryTextChange(object sender, SearchView.QueryTextChangeEventArgs e)
@@ -144,7 +144,7 @@ namespace SeuSeriado.Fragments
                     List.GetSearch.Search = JsonConvert.DeserializeObject<List<List.Search>>(Utils.Utils.Download(page, e.Query));
                     List.GetSearch.Search.RemoveAll(x => x.Title.Contains("AO VIVO"));
                     if (List.GetSearch.Search.Count == 0 || List.GetSearch.Search == null)
-                        throw (new Exception());
+                        throw new Exception();
 
                 }
                 catch

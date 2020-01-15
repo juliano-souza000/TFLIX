@@ -20,6 +20,8 @@ namespace SeuSeriado.List
         public string IMG64 { get; set; }
         public string EPThumb { get; set; }
         public bool Downloading { get; set; }
+        public bool Downloaded { get; set; }
+        public bool AlreadyChecked { get; set; }
     }
 
     public class GetMainPageSeries

@@ -65,8 +65,12 @@ namespace SeuSeriado.Adapter
         public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
         {
             MainPage_SeriesAdapterHolder Holder = holder as MainPage_SeriesAdapterHolder;
-
-            Holder.Title.Text = List.GetMainPageSeries.Series[position].Title.Replace("Online,", "");
+            var title = List.GetMainPageSeries.Series[position].Title.Replace("Online,", "");
+            title = title.Replace("Online ", "");
+            title = title.Replace("ª Temporada Episódio ", "x");
+            title = title.Replace(" LEGENDADO", "LEG");
+            title = title.Replace(" DUBLADO", "DUB");
+            Holder.Title.Text = title;
             Picasso.With(context).Load(List.GetMainPageSeries.Series[position].ImgLink).Into(Holder.Image, new Action(async () => { await Task.Run(()=>List.GetMainPageSeries.Series[position].IMG64 = Base64.EncodeToString(Utils.Utils.GetImageBytes(Holder.Image.Drawable), Base64Flags.UrlSafe)); }) , new Action(() => { }));
 
         }

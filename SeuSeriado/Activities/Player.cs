@@ -23,6 +23,7 @@ using Java.Util.Concurrent;
 using SeuSeriado.Services;
 using SeuSeriado.Srt;
 using Square.Picasso;
+using Xamarin.Essentials;
 using Encoding = System.Text.Encoding;
 
 namespace SeuSeriado.Activities
@@ -50,25 +51,30 @@ namespace SeuSeriado.Activities
         SurfaceView SSurfaceView;
         ISurfaceHolder SSurfaceHolder;
         MediaPlayer player;
+        Xamarin.Essentials.NetworkAccess current;
 
         System.Timers.Timer timer = new System.Timers.Timer();
         System.Timers.Timer CloseControlTimer = new System.Timers.Timer();
         System.Timers.Timer ResetClickCounter = new System.Timers.Timer();
-
-        public static DownloadFileServiceConnection serviceConnection;
 
         private const int DOWNLOAD_MANAGER_ID = 1;
         private int Pos;
         private int x = 0;
         private int ClickCount = 0;
         private string response;
-        private string SubtitleURL;
         private string VideoPlayerDataString;
 
         private bool ShowSubtitles = true;
         private bool IsFromSearch;
+        private bool IsOnline;
         private bool IsPrepared;
-        string filePath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "TempSubtitle.srt");
+        private bool IsSubtitled;
+        private bool IsListenerEnabled = false;
+        private string Show;
+        private int Season;
+        private int Ep;
+        private long BookmarkInMillisecond;
+        private string filePath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "TempSubtitle.srt");
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -124,6 +130,9 @@ namespace SeuSeriado.Activities
             CloseControlTimer.AutoReset = true;
             CloseControlTimer.Interval = 2000;
 
+            current = Connectivity.NetworkAccess;
+
+            Connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
             CloseControlTimer.Elapsed += CloseControlTimer_Elapsed;
             SeekBarPlayer.ProgressChanged += SeekBarPlayer_ProgressChanged;
             SeekBarPlayer.StartTrackingTouch += SeekBarPlayer_StartTrackingTouch;
@@ -135,6 +144,23 @@ namespace SeuSeriado.Activities
             PlayPause.Click += PlayPause_Click;
         }
 
+        private void Connectivity_ConnectivityChanged(object sender, ConnectivityChangedEventArgs e)
+        {
+            current = e.NetworkAccess;
+            if (IsOnline)
+            {
+                switch (e.NetworkAccess)
+                {
+                    case Xamarin.Essentials.NetworkAccess.Internet:
+                        Start();
+                        break;
+                    case Xamarin.Essentials.NetworkAccess.None:
+                        Pause();
+                        break;
+                }
+            }
+        }
+
         protected override void OnPause()
         {
             Pause();
@@ -143,8 +169,11 @@ namespace SeuSeriado.Activities
 
         protected override void OnDestroy()
         {
+            Utils.Bookmark.UpdateBookmarkInMillisecond(Show, Ep, Season, IsSubtitled, player.CurrentPosition);
+
             try
             {
+                player.Stop();
                 player.Release();
             }
             catch { }
@@ -171,28 +200,15 @@ namespace SeuSeriado.Activities
         private void Download_Click(object sender, EventArgs e)
         {
             bool download = false;
-            if (IsFromSearch && !List.GetSearch.Search[Pos].Downloading)
+            if (IsFromSearch && !List.GetSearch.Search[Pos].Downloading && !List.GetSearch.Search[Pos].Downloaded)
                 download = true;
-            else if (!IsFromSearch && !List.GetMainPageSeries.Series[Pos].Downloading)
+            else if (!IsFromSearch && !List.GetMainPageSeries.Series[Pos].Downloading && !List.GetMainPageSeries.Series[Pos].Downloaded)
                 download = true;
 
             if (download)
             {
                 Pause();
                 DownloadVideo();
-            }
-
-        }
-
-        private void AskPermission()
-        {
-            if (CheckSelfPermission(Android.Manifest.Permission.ReadExternalStorage) != Android.Content.PM.Permission.Granted)
-            {
-                RequestPermissions(new string[] { Android.Manifest.Permission.ReadExternalStorage }, 87);
-            }
-            if (CheckSelfPermission(Android.Manifest.Permission.WriteExternalStorage) != Android.Content.PM.Permission.Granted)
-            {
-                RequestPermissions(new string[] { Android.Manifest.Permission.WriteExternalStorage }, 88);
             }
 
         }
@@ -206,12 +222,12 @@ namespace SeuSeriado.Activities
 
                 if (!IsFromSearch)
                 {
-                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetMainPageSeries.Series[Pos].Title), GetImageBytes(Thumbnail.Drawable));
+                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetMainPageSeries.Series[Pos].Title), Utils.Utils.GetImageBytes(Thumbnail.Drawable));
                     List.GetMainPageSeries.Series[Pos].EPThumb = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title);
                 }
                 else
                 {
-                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title), GetImageBytes(Thumbnail.Drawable));
+                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title), Utils.Utils.GetImageBytes(Thumbnail.Drawable));
                     List.GetSearch.Search[Pos].EPThumb = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title);
                 }
             }
@@ -221,9 +237,11 @@ namespace SeuSeriado.Activities
                 && CheckSelfPermission(Android.Manifest.Permission.WriteExternalStorage) == Android.Content.PM.Permission.Granted)
             {
 
-                
                 try
                 {
+                    if (!System.IO.Directory.Exists(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles"))
+                        System.IO.Directory.CreateDirectory(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles");
+
                     if (!IsFromSearch)
                     {
                         System.IO.File.WriteAllText(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", List.GetMainPageSeries.Series[Pos].Title + ".srt"), System.IO.File.ReadAllText(filePath));
@@ -241,11 +259,11 @@ namespace SeuSeriado.Activities
                 downloader.PutExtra("IsFromSearch", IsFromSearch);
                 //downloader.PutExtra("DownloadEPDuration", player.Duration);
 
-                if (serviceConnection == null)
+                if (Utils.Utils.serviceConnection == null)
                 {
                     Intent serviceBinder = new Intent(this, typeof(DownloadFilesService));
-                    serviceConnection = new DownloadFileServiceConnection();
-                    Application.BindService(serviceBinder, serviceConnection, Bind.AutoCreate);
+                    Utils.Utils.serviceConnection = new DownloadFileServiceConnection();
+                    Application.BindService(serviceBinder, Utils.Utils.serviceConnection, Bind.AutoCreate);
                 }
 
                 Application.StartService(downloader);
@@ -258,11 +276,9 @@ namespace SeuSeriado.Activities
             }
             else
             {
-                AskPermission();
+                Utils.Utils.AskPermission(this);
             }
         }
-
-       
 
         private void Subtitles_Click(object sender, EventArgs e)
         {
@@ -280,12 +296,22 @@ namespace SeuSeriado.Activities
 
         private void PlayPause_Click(object sender, EventArgs e)
         {
-            if (player.IsPlaying)
-                Pause();
+            if (IsOnline)
+            {
+                if (player.IsPlaying)
+                    Pause();
+                else
+                    if (current == Xamarin.Essentials.NetworkAccess.Internet)
+                    Start();
+            }
             else
-                Start();
+            {
+                if (player.IsPlaying)
+                    Pause();
+                else
+                    Start();
+            }
         }
-
 
         private void SeekBarPlayer_StartTrackingTouch(object sender, SeekBar.StartTrackingTouchEventArgs e) { Pause(); }
 
@@ -449,41 +475,6 @@ namespace SeuSeriado.Activities
             }
         }
 
-        private void GetSubtitle(string URL, bool IsHDVideo)
-        {
-            if (!IsHDVideo)
-            {
-                try
-                {
-                    SubtitleURL = URL.Substring(URL.IndexOf("<a href='"));
-                    SubtitleURL = SubtitleURL.Substring(0, SubtitleURL.IndexOf("'>Baixar Legenda"));
-                    SubtitleURL = SubtitleURL.Replace("<a href='", "");
-                }
-                catch
-                {
-                    SubtitleURL = SubtitleURL.Substring(URL.IndexOf("seuseriado.com/player/legendas"));
-                    SubtitleURL = SubtitleURL.Substring(0, SubtitleURL.IndexOf("','"));
-                }
-                SubtitleURL = SubtitleURL.Replace(" ", "%20");
-            }else
-            {
-                try
-                {
-                    SubtitleURL = URL.Substring(0,URL.IndexOf(".srt")+4);
-                    SubtitleURL = SubtitleURL.Substring(SubtitleURL.IndexOf("'//seuseriado.com"));
-                    SubtitleURL = SubtitleURL.Replace("'//","");
-                }
-                catch { }
-            }
-            WebClient client = new WebClient();
-            try
-            {
-                System.IO.File.WriteAllText(filePath, Encoding.UTF8.GetString(client.DownloadData("http://"+SubtitleURL)));
-            }
-            catch {}
-        }
-
-
         private void GetVideo()
         {
             string URL;
@@ -510,7 +501,7 @@ namespace SeuSeriado.Activities
                             Loading.Visibility = ViewStates.Visible;
                             Loading.BringToFront();
                         });
-                        GetSubtitle(VideoPlayerDataString, true);
+                        Utils.Utils.GetSubtitle(VideoPlayerDataString, true);
                         VideoPlayerDataString = VideoPlayerDataString.Substring(0, VideoPlayerDataString.IndexOf("','HD'"));
                         try
                         {
@@ -525,12 +516,12 @@ namespace SeuSeriado.Activities
 
                         if (VideoPlayerDataString.Contains("http://videoshare.club/"))
                         {
-                            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(VideoPlayerDataString);
-                            request.AllowAutoRedirect = false;
-                            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                            response.Close();
+                            HttpWebRequest requests = (HttpWebRequest)WebRequest.Create(VideoPlayerDataString);
+                            requests.AllowAutoRedirect = false;
+                            HttpWebResponse responses = (HttpWebResponse)requests.GetResponse();
+                            responses.Close();
 
-                            VideoPlayerDataString = response.Headers["location"];
+                            VideoPlayerDataString = responses.Headers["location"];
                         }
 
                         RunOnUiThread(() =>
@@ -549,66 +540,51 @@ namespace SeuSeriado.Activities
                 }
                 catch
                 {
-                    URL = response.Substring(response.IndexOf("https://player2.seuseriado.com/player/p.php?"));
-                    URL = URL.Substring(0, URL.IndexOf("\" frameborder=\"0\""));
-                    VideoPlayerData = request.DownloadData(URL);
-                    VideoPlayerDataString = Encoding.UTF8.GetString(VideoPlayerData);
-
-                    GetSubtitle(VideoPlayerDataString, false);
-
-                    if (VideoPlayerDataString.Contains("Error"))
+                    try
                     {
-                        Toast.MakeText(this, "Esse título não está disponivel no momento. Por favor, tente novamente mais tarde.", ToastLength.Long);
-                        Finish();
-                    }
-                    else
-                    {
-                        RunOnUiThread(() =>
+                        URL = response.Substring(response.IndexOf("https://player2.seuseriado.com/player/p.php?"));
+                        URL = URL.Substring(0, URL.IndexOf("\" frameborder=\"0\""));
+                        VideoPlayerData = request.DownloadData(URL);
+                        VideoPlayerDataString = Encoding.UTF8.GetString(VideoPlayerData);
+
+                        Utils.Utils.GetSubtitle(VideoPlayerDataString, false);
+
+                        if (VideoPlayerDataString.Contains("Error"))
                         {
-                            Loading.Visibility = ViewStates.Visible;
-                            Loading.BringToFront();
-                        });
-                        VideoPlayerDataString = VideoPlayerDataString.Substring(0, VideoPlayerDataString.IndexOf("','SD'"));
-                        VideoPlayerDataString = VideoPlayerDataString.Substring(VideoPlayerDataString.IndexOf("Play('"));
-                        VideoPlayerDataString = VideoPlayerDataString.Replace("Play('", "");
-                        RunOnUiThread(() =>
+                            Toast.MakeText(this, "Esse título não está disponivel no momento. Por favor, tente novamente mais tarde.", ToastLength.Long).Show();
+                            this.Finish();
+                        }
+                        else
                         {
-                            try
+                            RunOnUiThread(() =>
                             {
-                                HD.SetImageResource(Resource.Drawable.baseline_hd_off);
-                                player.SetDataSource(this, Android.Net.Uri.Parse(VideoPlayerDataString));
-                                player.PrepareAsync();
-                                player.SetOnPreparedListener(this);
-                            }
-                            catch { }
-                        });
+                                Loading.Visibility = ViewStates.Visible;
+                                Loading.BringToFront();
+                            });
+                            VideoPlayerDataString = VideoPlayerDataString.Substring(0, VideoPlayerDataString.IndexOf("','SD'"));
+                            VideoPlayerDataString = VideoPlayerDataString.Substring(VideoPlayerDataString.IndexOf("Play('"));
+                            VideoPlayerDataString = VideoPlayerDataString.Replace("Play('", "");
+                            RunOnUiThread(() =>
+                            {
+                                try
+                                {
+                                    HD.SetImageResource(Resource.Drawable.baseline_hd_off);
+                                    player.SetDataSource(this, Android.Net.Uri.Parse(VideoPlayerDataString));
+                                    player.PrepareAsync();
+                                    player.SetOnPreparedListener(this);
+                                }
+                                catch { }
+                            });
+                        }
+                    }
+                    catch
+                    {
+                        Toast.MakeText(this, "Esse título não está disponivel no momento. Por favor, tente novamente mais tarde.", ToastLength.Long).Show();
+                        this.Finish();
                     }
                 }
             };
             worker.RunWorkerAsync();
-        }
-
-        private string VideoPageUrl(string Url)
-        {
-            Url = Regex.Replace(Url, "[éèëêð]", "e");
-            Url = Regex.Replace(Url, "[ÉÈËÊ]", "E");
-            Url = Regex.Replace(Url, "[àâä]", "a");
-            Url = Regex.Replace(Url, "[ÀÁÂÃÄÅ]", "A");
-            Url = Regex.Replace(Url, "[àáâãäå]", "a");
-            Url = Regex.Replace(Url, "[ÙÚÛÜ]", "U");
-            Url = Regex.Replace(Url, "[ùúûüµ]", "u");
-            Url = Regex.Replace(Url, "[òóôõöø]", "o");
-            Url = Regex.Replace(Url, "[ÒÓÔÕÖØ]", "O");
-            Url = Regex.Replace(Url, "[ìíîï]", "i");
-            Url = Regex.Replace(Url, "[ÌÍÎÏ]", "I");
-            Url = Regex.Replace(Url, @"\s+", " ");
-            Url = Url.Replace(" (SEASON FINALE)", "");
-            Url = Url.Replace("ª","a");
-            Url = Url.Replace("º", "o");
-            Url = Url.Replace("- ", "");
-            Url = Url.Replace(" ","-");
-            Url = Url.Replace("SEM-LEGENDA", "legendado");
-            return "https://seuseriado.com/"+Url.ToLower();
         }
 
         public void SurfaceChanged(ISurfaceHolder holder, [GeneratedEnum] Format format, int width, int height) { }
@@ -623,31 +599,79 @@ namespace SeuSeriado.Activities
 
             if (Intent.Extras.GetBoolean("IsOnline"))
             {
+                IsOnline = true;
                 if (!Intent.Extras.GetBoolean("IsFromSearch"))
                 {
                     IsFromSearch = false;
                     PTitle.Text = List.GetMainPageSeries.Series[Pos].Title;
-                    DownloadThumbnail(VideoPageUrl(List.GetMainPageSeries.Series[Pos].Title));
+                    DownloadThumbnail(Utils.Utils.VideoPageUrl(List.GetMainPageSeries.Series[Pos].Title));
                     if (List.GetMainPageSeries.Series[Pos].Downloading)
                         Download.SetImageResource(Resource.Drawable.baseline_cloud_download_on);
+
+                    (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(List.GetMainPageSeries.Series[Pos].Title);
+
+                    if (List.GetMainPageSeries.Series[Pos].Title.Contains("LEGENDADO") || List.GetMainPageSeries.Series[Pos].Title.Contains("SEM LEGENDA"))
+                        IsSubtitled = true;
+                    BookmarkInMillisecond = Utils.Bookmark.GetBookmarkInMillisecond(Show, Ep, Season, IsSubtitled);
                 }
                 else
                 {
                     IsFromSearch = true;
                     PTitle.Text = List.GetSearch.Search[Pos].Title.Replace("Online,", "Online ");
-                    DownloadThumbnail(VideoPageUrl(List.GetSearch.Search[Pos].Title.Replace("Online,","Online ")));
+                    DownloadThumbnail(Utils.Utils.VideoPageUrl(List.GetSearch.Search[Pos].Title.Replace("Online,","Online ")));
                     if(List.GetSearch.Search[Pos].Downloading)
                         Download.SetImageResource(Resource.Drawable.baseline_cloud_download_on);
+
+                    (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(List.GetSearch.Search[Pos].Title);
+
+                    if (List.GetSearch.Search[Pos].Title.Contains("LEGENDADO") || List.GetSearch.Search[Pos].Title.Contains("SEM LEGENDA"))
+                        IsSubtitled = true;
+                    BookmarkInMillisecond = Utils.Bookmark.GetBookmarkInMillisecond(Show, Ep, Season, IsSubtitled);
                 }
+                Utils.Bookmark.InsertData(Show, Ep, Season, IsSubtitled);
                 GetVideo();
             }
             else
             {
                 var path = Intent.Extras.GetString("VideoPath");
+
                 PTitle.Text = path.Split('/').Last();
+
+                var subPath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", PTitle.Text + ".srt");
+
                 Download.Visibility = ViewStates.Gone;
                 HD.Visibility = ViewStates.Gone;
-                filePath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", PTitle.Text + ".srt");
+                if(current == Xamarin.Essentials.NetworkAccess.Internet)
+                {
+                    try
+                    {
+                        var requests = new WebClient();
+                        var url = Utils.Utils.VideoPageUrl(PTitle.Text);
+                        var Data = requests.DownloadData(url);
+                        var responses = Encoding.UTF8.GetString(Data);
+
+                        var URL = responses.Substring(responses.IndexOf("https://player2.seuseriado.com/player/p.php?"));
+                        URL = URL.Substring(0, URL.IndexOf("\" frameborder=\"0\""));
+                        var VideoPlayerData = requests.DownloadData(URL);
+                        VideoPlayerDataString = Encoding.UTF8.GetString(VideoPlayerData);
+
+                        var length = Utils.Utils.GetSubtitle(VideoPlayerDataString, false, true);
+
+                        if (!System.IO.Directory.Exists(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles"))
+                            System.IO.Directory.CreateDirectory(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles");
+
+                        if (!System.IO.File.Exists(subPath))
+                            System.IO.File.Create(subPath).Close();
+
+                        if (length < new System.IO.FileInfo(subPath).Length || new System.IO.FileInfo(subPath).Length == 0)
+                        {
+                            Utils.Utils.GetSubtitle(VideoPlayerDataString, false);
+                            System.IO.File.WriteAllText(subPath, System.IO.File.ReadAllText(filePath));
+                        }
+                    }
+                    catch { }
+                }
+                filePath = subPath;
 
                 LoadVideoFromStorage(path);
             }
@@ -657,6 +681,16 @@ namespace SeuSeriado.Activities
         {
             timer.Stop();
             timer.Enabled = false;
+        }
+
+        private void Player_Error(object sender, MediaPlayer.ErrorEventArgs e)
+        {
+            switch(e.What)
+            {
+                case MediaError.ServerDied:
+                    Pause();
+                    break;
+            }
         }
 
         private void Player_Info(object sender, Android.Media.MediaPlayer.InfoEventArgs e)
@@ -693,15 +727,59 @@ namespace SeuSeriado.Activities
             SetSubtitles();
 
             player.SetOnSeekCompleteListener(this);
-            Start();
+
+            if(current == Xamarin.Essentials.NetworkAccess.Internet)
+                Start();
 
             EndTime.Text = StringForTime(player.Duration);
             SeekBarPlayer.Max = player.Duration;
 
+            if (!IsOnline)
+            {
+                var listPos = Intent.Extras.GetInt("ListPos");
+                BookmarkInMillisecond = List.GetDownloads.Series[listPos].Episodes[Pos].TimeWatched;
+
+                Show = List.GetDownloads.Series[listPos].Show;
+                Ep = List.GetDownloads.Series[listPos].Episodes[Pos].EP;
+                Season = List.GetDownloads.Series[listPos].Episodes[Pos].ShowSeason;
+                IsSubtitled = List.GetDownloads.Series[listPos].IsSubtitled;
+
+                Utils.Bookmark.InsertData(Show, Ep, Season, IsSubtitled);
+            }
+
+            if(!IsFromSearch)
+            {
+                List.GetMainPageSeries.Series[Pos].Downloaded = Utils.Database.IsItemDownloaded(Season, Show, IsSubtitled, Ep);
+                List.GetMainPageSeries.Series[Pos].AlreadyChecked = true;
+
+                if (List.GetMainPageSeries.Series[Pos].Downloaded)
+                {
+                    Download.SetColorFilter(Color.Argb(255, 255, 255, 255));
+                    Download.SetImageDrawable(GetDrawable(Resource.Drawable.baseline_cloud_done_24));
+                }
+            }
+            else
+            {
+                if (List.GetSearch.Search[Pos].Downloaded)
+                {
+                    Download.SetColorFilter(Color.Argb(255, 255, 255, 255));
+                    Download.SetImageDrawable(GetDrawable(Resource.Drawable.baseline_cloud_done_24));
+                }
+            }
+
+            PTitle.Text = PTitle.Text.Replace("Online ", "");
+
+            SeekTo((int)BookmarkInMillisecond);
+
             timer.Interval = 10;
-            timer.Elapsed += Timer_Elapsed;
             timer.Enabled = true;
             timer.AutoReset = true;
+
+            if (!IsListenerEnabled)
+            {
+                player.Error += Player_Error;
+                timer.Elapsed += Timer_Elapsed;
+            }
         }
 
         private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -853,15 +931,5 @@ namespace SeuSeriado.Activities
             }
         }
 
-        private byte[] GetImageBytes(Drawable d)
-        {
-            Bitmap bitmap = ((BitmapDrawable)d).Bitmap;
-            var ms = new System.IO.MemoryStream();
-            bitmap.Compress(Bitmap.CompressFormat.Png, 100, ms);
-            return ms.ToArray();
-        }
-
-
-       
     }
 }

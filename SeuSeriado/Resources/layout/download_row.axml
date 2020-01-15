@@ -13,7 +13,8 @@
 		android:layout_centerVertical="true"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:layout_toRightOf="@id/thumbnail_dpg">
+		android:layout_toRightOf="@id/thumbnail_dpg"
+		android:id="@+id/relative_dpg">
 	<TextView
 		android:text="TITLE"
 		android:layout_width="wrap_content"
@@ -38,6 +39,17 @@
 		android:layout_marginTop="5dp"
 		android:layout_marginLeft="6dp"/>
 	</RelativeLayout>
+	<TextView
+		android:text="TYPE"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:id="@+id/type_dpg"
+		android:layout_below="@id/relative_dpg"
+		android:layout_toRightOf="@id/thumbnail_dpg"
+		android:textSize="5pt"
+		android:textColor="#0171F0"
+		android:singleLine="true"
+		android:layout_marginLeft="12dp"/>
 	<ImageView
 		android:id="@+id/see_more"
 		android:src="@drawable/baseline_keyboard_arrow_right_24"

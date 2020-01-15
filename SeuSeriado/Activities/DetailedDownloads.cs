@@ -17,14 +17,14 @@ using Toolbar = Android.Widget.Toolbar;
 
 namespace SeuSeriado.Activities
 {
-    [Activity(Label = "DetailedDownloads", ParentActivity = typeof(MainActivity))]
+    [Activity(Label = "DetailedDownloads", ParentActivity = typeof(MainActivity), ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public class DetailedDownloads : Activity, IOnUserSelectItems
     {
-        private RecyclerView Episodes;
+        private static RecyclerView Episodes;
         private Toolbar toolbar;
-        private EpisodesAdapter adapter;
+        private static EpisodesAdapter adapter;
 
-        private int Pos;
+        private static int Pos;
         private bool IsSelecting;
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -32,7 +32,7 @@ namespace SeuSeriado.Activities
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.downloaded_episodes);
 
-            toolbar = FindViewById<Android.Widget.Toolbar>(Resource.Id.downloaded_episodes_toolbar);
+            toolbar = FindViewById<Toolbar>(Resource.Id.downloaded_episodes_toolbar);
             Episodes = (RecyclerView)FindViewById(Resource.Id.downloaded_episodes);
 
             SetActionBar(toolbar);
@@ -48,7 +48,7 @@ namespace SeuSeriado.Activities
             Episodes.SetLayoutManager(new LinearLayoutManager(this));
             Episodes.HasFixedSize = true;
             Episodes.SetAdapter(adapter);
-        
+
         }
 
         public override bool OnCreateOptionsMenu(IMenu menu)
@@ -113,6 +113,42 @@ namespace SeuSeriado.Activities
                 default:
                     return base.OnOptionsItemSelected(item);
             }
+        }
+
+        public static void ReloadDataset()
+        {
+            try
+            {
+                adapter.NotifyDataSetChanged();
+            }
+            catch { }
+        }
+
+        public static void ProgressChanged(int ShowSeason, int EP)
+        {
+            var epIndex = List.GetDownloads.Series[Pos].Episodes.FindIndex(x => x.EP == EP && x.ShowSeason == ShowSeason);
+
+            try
+            {
+                var holder = Episodes.FindViewHolderForAdapterPosition(epIndex);
+                var downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
+                var downloaded = holder.ItemView.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_dp);
+
+                if (List.GetDownloads.Series[Pos].Episodes[epIndex].Progress != 100)
+                {
+                    if (downloadProgress.Visibility != ViewStates.Visible)
+                        downloadProgress.Visibility = ViewStates.Visible;
+                    downloadProgress.Progress = List.GetDownloads.Series[Pos].Episodes[epIndex].Progress;
+                }
+                else
+                {
+                    downloadProgress.Visibility = ViewStates.Gone;
+                    downloaded.Visibility = ViewStates.Visible;
+                    adapter.NotifyItemChanged(epIndex);
+                }
+            }
+            catch { }
+            //Console.WriteLine("Progress has changed");
         }
 
         public void IsUserSelecting(bool userSelecting)
