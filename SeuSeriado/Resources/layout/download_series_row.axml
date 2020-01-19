@@ -2,8 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-	android:background="@drawable/ripple"
-    android:layout_height="100dp">
+    android:layout_height="100dp"
+	android:background="@drawable/ripple" >
 	<RelativeLayout
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
@@ -78,16 +78,28 @@
 	<ImageView
 		android:id="@+id/episodes_dpg_ep_dp"
 		android:src="@drawable/baseline_mobile_friendly_24"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
+		android:background="?selectableItemBackgroundBorderless"
+		android:layout_width="24dp"
+		android:layout_height="24dp"
 		android:layout_marginRight="21dp"
 		android:layout_centerVertical="true"
 		android:layout_alignParentRight="true"
 		android:visibility="gone"
 		android:tint="#0171F0"/>
+	<ImageView
+		android:id="@+id/pauseresume_dpg_ep_dp"
+		android:src="@drawable/download_paused_outline"
+		android:background="?selectableItemBackgroundBorderless"
+		android:layout_width="24dp"
+		android:layout_height="24dp"
+		android:layout_marginRight="20dp"
+		android:layout_centerVertical="true"
+		android:layout_alignParentRight="true"
+		android:visibility="gone" />
 	<ProgressBar
 		android:id="@+id/download_progressbar"
 		style="?android:attr/progressBarStyleHorizontal"
+		android:background="?selectableItemBackgroundBorderless"
 		android:layout_width="24dp"
 		android:layout_height="24dp"
 		android:layout_marginRight="20dp"

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Android.App;
 using Android.Content;
+using Android.Graphics.Drawables;
 using Android.OS;
 using Android.Runtime;
 using Android.Support.V7.Widget;
@@ -74,6 +75,7 @@ namespace SeuSeriado.Adapter
                     List.GetSearch.Search[position].Downloaded = Utils.Database.IsItemDownloaded(Season, Show, false, Ep);
                 List.GetSearch.Search[position].AlreadyChecked = true;
             }
+
             if (List.GetSearch.Search[position].Downloaded)
             {
                 Holder.Download.SetColorFilter(Android.Graphics.Color.Argb(255, 255, 255, 255));
@@ -99,8 +101,9 @@ namespace SeuSeriado.Adapter
                 {
                     var holder = rec.FindViewHolderForAdapterPosition(Pos);
                     var dowload = holder.ItemView.FindViewById<ImageView>(Resource.Id.download_spg);
-                    dowload.SetImageDrawable(context.GetDrawable(Resource.Drawable.baseline_cloud_download_on));
+                    
                     Utils.Utils.DownloadVideo(true, Pos, context);
+                    dowload.SetImageDrawable(context.GetDrawable(Resource.Drawable.baseline_cloud_download_on));
                 }
             }
             catch { }

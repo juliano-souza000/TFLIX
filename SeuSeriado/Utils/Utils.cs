@@ -150,6 +150,19 @@ namespace SeuSeriado.Utils
             return availableBlocks * blockSize;
         }
 
+        public static string GetSynopsis(string url)
+        {
+            string synopsis;
+            WebClient client = new WebClient();
+            var data = client.DownloadData(url);
+            var dataString = Encoding.UTF8.GetString(data);
+
+            dataString = dataString.Substring(dataString.IndexOf("<div id=\"sinopseshow\"") + 117);
+            synopsis = dataString.Substring(0, dataString.IndexOf("</div>"));
+
+            return synopsis;
+        }
+
         public static async void DownloadVideo(bool IsFromSearch, int Pos, Context context)
         {
             string Url;
@@ -232,46 +245,50 @@ namespace SeuSeriado.Utils
         {
             string SubtitleURL = "";
             long length = 0;
-            if (!IsHDVideo)
-            {
-                try
-                {
-                    SubtitleURL = URL.Substring(URL.IndexOf("<a href='"));
-                    SubtitleURL = SubtitleURL.Substring(0, SubtitleURL.IndexOf("'>Baixar Legenda"));
-                    SubtitleURL = SubtitleURL.Replace("<a href='", "");
-                }
-                catch
-                {
-                    SubtitleURL = SubtitleURL.Substring(URL.IndexOf("seuseriado.com/player/legendas"));
-                    SubtitleURL = SubtitleURL.Substring(0, SubtitleURL.IndexOf("','"));
-                }
-                SubtitleURL = SubtitleURL.Replace(" ", "%20");
-            }
-            else
-            {
-                try
-                {
-                    SubtitleURL = URL.Substring(0, URL.IndexOf(".srt") + 4);
-                    SubtitleURL = SubtitleURL.Substring(SubtitleURL.IndexOf("'//seuseriado.com"));
-                    SubtitleURL = SubtitleURL.Replace("'//", "");
-                }
-                catch { }
-            }
-            WebClient client = new WebClient();
             try
             {
-                if (!RequestFileSize)
+                if (!IsHDVideo)
                 {
-                    if(SubtitleURL.StartsWith("http"))
-                        System.IO.File.WriteAllText(filePath, Encoding.UTF8.GetString(client.DownloadData(SubtitleURL)));
-                    else
-                        System.IO.File.WriteAllText(filePath, Encoding.UTF8.GetString(client.DownloadData("http://"+SubtitleURL)));
+                    try
+                    {
+                        SubtitleURL = URL.Substring(URL.IndexOf("<a href='"));
+                        SubtitleURL = SubtitleURL.Substring(0, SubtitleURL.IndexOf("'>Baixar Legenda"));
+                        SubtitleURL = SubtitleURL.Replace("<a href='", "");
+                    }
+                    catch
+                    {
+                        SubtitleURL = SubtitleURL.Substring(URL.IndexOf("seuseriado.com/player/legendas"));
+                        SubtitleURL = SubtitleURL.Substring(0, SubtitleURL.IndexOf("','"));
+                    }
+                    SubtitleURL = SubtitleURL.Replace(" ", "%20");
                 }
                 else
                 {
-                    client.OpenRead("http://" + SubtitleURL);
-                    length = long.Parse(client.ResponseHeaders["Content-Length"]);
+                    try
+                    {
+                        SubtitleURL = URL.Substring(0, URL.IndexOf(".srt") + 4);
+                        SubtitleURL = SubtitleURL.Substring(SubtitleURL.IndexOf("'//seuseriado.com"));
+                        SubtitleURL = SubtitleURL.Replace("'//", "");
+                    }
+                    catch { }
                 }
+                WebClient client = new WebClient();
+                try
+                {
+                    if (!RequestFileSize)
+                    {
+                        if (SubtitleURL.StartsWith("http"))
+                            System.IO.File.WriteAllText(filePath, Encoding.UTF8.GetString(client.DownloadData(SubtitleURL)));
+                        else
+                            System.IO.File.WriteAllText(filePath, Encoding.UTF8.GetString(client.DownloadData("http://" + SubtitleURL)));
+                    }
+                    else
+                    {
+                        client.OpenRead("http://" + SubtitleURL);
+                        length = long.Parse(client.ResponseHeaders["Content-Length"]);
+                    }
+                }
+                catch { }
             }
             catch { }
             return length;
@@ -301,35 +318,35 @@ namespace SeuSeriado.Utils
             return d;
         }
 
-        public static string VideoPageUrl(string Url)
+        public static string VideoPageUrl(string title)
         {
-            if(Url.Contains("DUBLADO"))
-                Url = Url.Substring(0, Url.IndexOf("DUBLADO")+7);
-            else if(Url.Contains("LEGENDADO"))
-                Url = Url.Substring(0, Url.IndexOf("LEGENDADO")+9);
-            else if (Url.Contains("NACIONAL"))
-                Url = Url.Substring(0, Url.IndexOf("NACIONAL")+8);
+            if(title.Contains("DUBLADO"))
+                title = title.Substring(0, title.IndexOf("DUBLADO")+7);
+            else if(title.Contains("LEGENDADO"))
+                title = title.Substring(0, title.IndexOf("LEGENDADO")+9);
+            else if (title.Contains("NACIONAL"))
+                title = title.Substring(0, title.IndexOf("NACIONAL")+8);
 
-            Url = Regex.Replace(Url, "[éèëêð]", "e");
-            Url = Regex.Replace(Url, "[ÉÈËÊ]", "E");
-            Url = Regex.Replace(Url, "[àâä]", "a");
-            Url = Regex.Replace(Url, "[ÀÁÂÃÄÅ]", "A");
-            Url = Regex.Replace(Url, "[àáâãäå]", "a");
-            Url = Regex.Replace(Url, "[ÙÚÛÜ]", "U");
-            Url = Regex.Replace(Url, "[ùúûüµ]", "u");
-            Url = Regex.Replace(Url, "[òóôõöø]", "o");
-            Url = Regex.Replace(Url, "[ÒÓÔÕÖØ]", "O");
-            Url = Regex.Replace(Url, "[ìíîï]", "i");
-            Url = Regex.Replace(Url, "[ÌÍÎÏ]", "I");
-            Url = Regex.Replace(Url, @"\s+", " ");
-            Url = Url.Replace(",", "");
-            Url = Url.Replace(" (SEASON FINALE)", "");
-            Url = Url.Replace("ª", "a");
-            Url = Url.Replace("º", "o");
-            Url = Url.Replace("- ", "");
-            Url = Url.Replace(" ", "-");
-            Url = Url.Replace("SEM-LEGENDA", "legendado");
-            return "https://seuseriado.com/" + Url.ToLower();
+            title = Regex.Replace(title, "[éèëêð]", "e");
+            title = Regex.Replace(title, "[ÉÈËÊ]", "E");
+            title = Regex.Replace(title, "[àâä]", "a");
+            title = Regex.Replace(title, "[ÀÁÂÃÄÅ]", "A");
+            title = Regex.Replace(title, "[àáâãäå]", "a");
+            title = Regex.Replace(title, "[ÙÚÛÜ]", "U");
+            title = Regex.Replace(title, "[ùúûüµ]", "u");
+            title = Regex.Replace(title, "[òóôõöø]", "o");
+            title = Regex.Replace(title, "[ÒÓÔÕÖØ]", "O");
+            title = Regex.Replace(title, "[ìíîï]", "i");
+            title = Regex.Replace(title, "[ÌÍÎÏ]", "I");
+            title = Regex.Replace(title, @"\s+", " ");
+            title = title.Replace(",", "");
+            title = title.Replace(" (SEASON FINALE)", "");
+            title = title.Replace("ª", "a");
+            title = title.Replace("º", "o");
+            title = title.Replace("- ", "");
+            title = title.Replace(" ", "-");
+            title = title.Replace("SEM-LEGENDA", "legendado");
+            return "https://seuseriado.com/" + title.ToLower();
         }
 
         public static void AskPermission(Context context)

@@ -16,6 +16,7 @@ namespace SeuSeriado.List
     {
         public string Update { get; set; }
         public string Title { get; set; }
+        public string Synopsis { get; set; }
         public string ImgLink { get; set; }
         public string IMG64 { get; set; }
         public string EPThumb { get; set; }

@@ -1,24 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Android.App;
 using Android.Content;
 using Android.Graphics;
-using Android.Media;
-using Android.OS;
-using Android.Runtime;
 using Android.Support.V7.Widget;
-using Android.Util;
 using Android.Views;
 using Android.Widget;
-using ByteSizeLib;
-using Java.Lang;
+
 using SeuSeriado.Activities;
+using SeuSeriado.Interface;
+using SeuSeriado.Services;
 using Square.Picasso;
 
 namespace SeuSeriado.Adapter
@@ -66,14 +58,16 @@ namespace SeuSeriado.Adapter
         {
             public View mMain { get; set; }
             public ImageView Image { get; set; }
+            public ImageView Done { get; set; }
+            public ImageView Play { get; set; }
+            public ImageView PauseResumeDownload { get; set; }
             public TextView Title { get; set; }
             public TextView EPMB { get; set; }
             public CheckBox Selector { get; set; }
             public ProgressBar DownloadProgress { get; set; }
-            public ImageView DonePause { get; set; }
             public ProgressBar TimeWatched { get; set; }
-            public ImageView Play { get; set; }
             public RelativeLayout ImageHolder { get; set; }
+
 
             public EpisodesAdapterHolder(View view) : base(view)
             {
@@ -114,20 +108,24 @@ namespace SeuSeriado.Adapter
             {
                 View row = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.download_series_row, parent, false);
                 ImageView image = row.FindViewById<ImageView>(Resource.Id.thumbnail_dpg_ep);
+                ImageView done = row.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_dp);
+                ImageView play = row.FindViewById<ImageView>(Resource.Id.play_dpg_ep);
+                ImageView pauseResumeDownload = row.FindViewById<ImageView>(Resource.Id.pauseresume_dpg_ep_dp);
                 TextView title = row.FindViewById<TextView>(Resource.Id.title_dpg_ep);
                 TextView epmb = row.FindViewById<TextView>(Resource.Id.episodes_dpg_ep);
                 CheckBox selector = row.FindViewById<CheckBox>(Resource.Id.episodes_dpg_selector);
                 ProgressBar downloadProgress = row.FindViewById<ProgressBar>(Resource.Id.download_progressbar); 
-                ImageView donePause = row.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_dp);
                 ProgressBar timeWatched = row.FindViewById<ProgressBar>(Resource.Id.timewatched_progressbar);
-                ImageView play = row.FindViewById<ImageView>(Resource.Id.play_dpg_ep);
                 RelativeLayout imageHolder = row.FindViewById<RelativeLayout>(Resource.Id.imageframe_dpg_ep);
                 selector.Clickable = false;
 
                 row.Click += Row_Click;
                 row.LongClick += Row_LongClick;
+                pauseResumeDownload.Click += PauseResumeDownload_Click;
+                downloadProgress.Click += PauseResumeDownload_Click;
+
                 image.SetScaleType(ImageView.ScaleType.CenterCrop);
-                EpisodesAdapterHolder view = new EpisodesAdapterHolder(row) { Image = image, Title = title, EPMB = epmb, Selector = selector, DownloadProgress = downloadProgress, DonePause = donePause, TimeWatched = timeWatched, Play = play, ImageHolder = imageHolder};
+                EpisodesAdapterHolder view = new EpisodesAdapterHolder(row) { Image = image, Title = title, EPMB = epmb, Selector = selector, DownloadProgress = downloadProgress, Done = done, TimeWatched = timeWatched, Play = play, ImageHolder = imageHolder, PauseResumeDownload = pauseResumeDownload};
                 return view;
             }
         }
@@ -168,27 +166,35 @@ namespace SeuSeriado.Adapter
                     Holder.Image.LayoutParameters.Height = (int)Utils.Utils.DPToPX(context, 100);
                 }
                 Holder.Image.RequestLayout();
-                //Console.WriteLine("EP: {0} Season: {1} IsDownloading: {2}", List.GetDownloads.Series[ListPos].Episodes[position].EP, List.GetDownloads.Series[ListPos].Episodes[position].ShowSeason, List.GetDownloads.Series[ListPos].Episodes[position].IsDownloading);
+                Console.WriteLine("EP: {0} Season: {1} IsDownloading: {2}", List.GetDownloads.Series[ListPos].Episodes[position].EP, List.GetDownloads.Series[ListPos].Episodes[position].ShowSeason, List.GetDownloads.Series[ListPos].Episodes[position].downloadInfo.IsDownloading);
 
-                if (List.GetDownloads.Series[ListPos].Episodes[position].IsDownloading == true && !IsUserSelecting)
+                if (List.GetDownloads.Series[ListPos].Episodes[position].downloadInfo.IsDownloading && !IsUserSelecting && !List.GetDownloads.Series[ListPos].Episodes[position].downloadInfo.IsPaused)
                 {
                     Holder.DownloadProgress.Visibility = ViewStates.Visible;
                     Holder.DownloadProgress.Progress = List.GetDownloads.Series[ListPos].Episodes[position].Progress;
+                    Holder.PauseResumeDownload.Visibility = ViewStates.Gone;
                 }
                 else
                 {
                     Holder.DownloadProgress.Visibility = ViewStates.Gone;
                 }
 
-                if(List.GetDownloads.Series[ListPos].Episodes[position].Progress == 100 && !IsUserSelecting)
+                if (List.GetDownloads.Series[ListPos].Episodes[position].downloadInfo.IsPaused)
+                {
+                    Holder.DownloadProgress.Visibility = ViewStates.Gone;
+                    Holder.PauseResumeDownload.Visibility = ViewStates.Visible;
+                }
+                
+
+                if (List.GetDownloads.Series[ListPos].Episodes[position].Progress == 100 && !IsUserSelecting)
                 {
                     var res = context.GetDrawable(Resource.Drawable.baseline_mobile_friendly_24);
-                    Holder.DonePause.SetImageDrawable(res);
-                    Holder.DonePause.Visibility = ViewStates.Visible;
+                    Holder.Done.SetImageDrawable(res);
+                    Holder.Done.Visibility = ViewStates.Visible;
                 }
                 else
                 {
-                    Holder.DonePause.Visibility = ViewStates.Gone;
+                    Holder.Done.Visibility = ViewStates.Gone;
                 }
 
                 if(List.GetDownloads.Series[ListPos].Episodes[position].Progress == 100)
@@ -217,7 +223,7 @@ namespace SeuSeriado.Adapter
 
                 try
                 {
-                    Holder.Title.Text = string.Format("{0}.", List.GetDownloads.Series[ListPos].Episodes[position].EP);
+                    Holder.Title.Text = string.Format("{0}. Episódio {0}", List.GetDownloads.Series[ListPos].Episodes[position].EP);
                     Holder.EPMB.Text = string.Format("{0} | {1}", GetDuration(List.GetDownloads.Series[ListPos].Episodes[position].Duration), Utils.Utils.Size(List.GetDownloads.Series[ListPos].Episodes[position].Bytes));
                 }
                 catch { }
@@ -236,8 +242,71 @@ namespace SeuSeriado.Adapter
             base.OnViewRecycled(holder);
         }
 
+        private void PauseResumeDownload_Click(object sender, EventArgs e)
+        {
+            View v = (View)sender;
+            try
+            {
+                int Pos = rec.GetChildAdapterPosition((View)v.Parent);
+                bool pause;
+                RecyclerView.ViewHolder holder = rec.FindViewHolderForAdapterPosition(Pos);
+                ImageView pauseResumeDownload = holder.ItemView.FindViewById<ImageView>(Resource.Id.pauseresume_dpg_ep_dp);
+                ProgressBar downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
+
+                Intent intentPauseResume = new Intent(context, typeof(DownloadFilesService));
+
+                if (List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.IsPaused)
+                {
+                    pauseResumeDownload.Visibility = ViewStates.Gone;
+                    downloadProgress.Visibility = ViewStates.Visible;
+                    downloadProgress.Progress = List.GetDownloads.Series[ListPos].Episodes[Pos].Progress;
+                    pause = false;
+                }
+                else
+                {
+                    downloadProgress.Visibility = ViewStates.Gone;
+                    pauseResumeDownload.Visibility = ViewStates.Visible;
+                    pause = true;
+                }
+
+                Console.WriteLine("URL: {0}\n" + 
+                                  "DownloadPos: {1}\n" +
+                                  "ListPos: {2}\n" + 
+                                  "NotificationID: {5}" +
+                                  "IsFromSearch: {3}\n" +
+                                  "FullTitle: {4}\n", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.URL
+                                                    , List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.DownloadPos
+                                                    , List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.ListPos
+                                                    , List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.IsFromSearch
+                                                    , List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.FullTitle
+                                                    , List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.NotificationID);
+
+                intentPauseResume.PutExtra("IsRequestingPauseResume", true);
+                intentPauseResume.PutExtra("NotificationID", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.NotificationID);
+                intentPauseResume.PutExtra("PauseResume", pause);
+                intentPauseResume.PutExtra("DownloadPos", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.DownloadPos);
+                intentPauseResume.PutExtra("ListPos", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.ListPos);
+                intentPauseResume.PutExtra("IsFromSearch", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.IsFromSearch);
+
+                intentPauseResume.PutExtra("URL", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.URL);
+                intentPauseResume.PutExtra("FullTitle", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.FullTitle);
+                intentPauseResume.PutExtra("Show", List.GetDownloads.Series[ListPos].Show);
+                intentPauseResume.PutExtra("Ep", List.GetDownloads.Series[ListPos].Episodes[Pos].EP);
+                intentPauseResume.PutExtra("ShowSeason", List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason);
+                intentPauseResume.PutExtra("IsSubtitled", List.GetDownloads.Series[ListPos].IsSubtitled);
+                intentPauseResume.PutExtra("Thumb", List.GetDownloads.Series[ListPos].Episodes[Pos].EpThumb);
+                intentPauseResume.PutExtra("ShowThumb", List.GetDownloads.Series[ListPos].ShowThumb);
+
+                context.StartService(intentPauseResume);
+
+                List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.IsPaused = !List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.IsPaused;
+            }
+            catch { }
+        }
+
         private void Row_LongClick(object sender, View.LongClickEventArgs e)
         {
+
             int Pos = rec.GetChildLayoutPosition((View)sender);
             RecyclerView.ViewHolder holder = rec.FindViewHolderForAdapterPosition(Pos);
             CheckBox selector = holder.ItemView.FindViewById<CheckBox>(Resource.Id.episodes_dpg_selector);
@@ -262,6 +331,7 @@ namespace SeuSeriado.Adapter
                     {
                         holder = rec.FindViewHolderForLayoutPosition(Pos);
                         var row = holder.ItemView;
+                        row.SoundEffectsEnabled = false;
                         row.PerformClick();
                     }
                     catch { }
@@ -270,9 +340,10 @@ namespace SeuSeriado.Adapter
             else
             {
                 var row = holder.ItemView;
+                row.SoundEffectsEnabled = false;
                 row.PerformClick();
             }
-            Console.WriteLine(List.GetDownloads.Series[ListPos].Episodes[Pos].TotalBytesEP);
+            //Console.WriteLine(List.GetDownloads.Series[ListPos].Episodes[Pos].TotalBytesEP);
         }
 
         private void Row_Click(object sender, EventArgs e)
@@ -280,7 +351,7 @@ namespace SeuSeriado.Adapter
             int Pos = rec.GetChildLayoutPosition((View)sender);
             //Console.WriteLine("Pos: " + Pos);
             if (!IsUserSelecting)
-            { 
+            {
                 _IOnUserSelectItems.IsUserSelecting(false);
                 if (List.GetDownloads.Series[ListPos].Episodes[Pos].Progress == 100)
                 {
@@ -313,6 +384,16 @@ namespace SeuSeriado.Adapter
                     thumb.LayoutParameters.Height = (int)Utils.Utils.DPToPX(context, 100);
                 }
                 thumb.RequestLayout();
+
+                var countOfItemsWithPosSeason = List.GetDownloads.Series[ListPos].Episodes.FindAll(delegate (List.Downloads dl) { return dl.ShowSeason == List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason && dl.EP != 0; }).Count;
+                var countOfItemsWithPosSeasonSelected = List.GetDownloads.Series[ListPos].Episodes.FindAll(delegate (List.Downloads dl) { return dl.ShowSeason == List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason && dl.IsSelected && dl.EP != 0; }).Count;
+
+                var headerIndex = List.GetDownloads.Series[ListPos].Episodes.FindIndex(x => x.EP == 0 && x.ShowSeason == List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason && x.ShowID == List.GetDownloads.Series[ListPos].Episodes[Pos].ShowID);
+
+                if (countOfItemsWithPosSeason == countOfItemsWithPosSeasonSelected)
+                    List.GetDownloads.Series[ListPos].Episodes[headerIndex].IsSelected = true;
+                else
+                    List.GetDownloads.Series[ListPos].Episodes[headerIndex].IsSelected = false;
             }
         }
 

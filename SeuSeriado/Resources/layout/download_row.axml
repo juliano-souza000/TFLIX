@@ -2,18 +2,25 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="100dp">
+    android:layout_height="100dp"
+	android:background="@drawable/ripple">
+	<RelativeLayout
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+		android:id="@+id/imageframe_dpg">
 	<ImageView
 		android:id="@+id/thumbnail_dpg"
 		android:layout_width="100dp"
 		android:layout_height="100dp"
 		android:background="#ff505050"
-		android:layout_margin="5dp"/>
+		android:layout_margin="5dp"
+		android:layout_centerInParent="true"/>
+	</RelativeLayout>
 	<RelativeLayout
 		android:layout_centerVertical="true"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:layout_toRightOf="@id/thumbnail_dpg"
+		android:layout_toRightOf="@id/imageframe_dpg"
 		android:id="@+id/relative_dpg">
 	<TextView
 		android:text="TITLE"
@@ -32,7 +39,7 @@
 		android:layout_height="wrap_content"
 		android:id="@+id/episodes_dpg"
 		android:layout_below="@id/title_dpg"
-		android:layout_toRightOf="@id/thumbnail_dpg"
+		android:layout_toRightOf="@id/imageframe_dpg"
 		android:textSize="5.5pt"
 		android:textColor="#A0A0A0"
 		android:singleLine="true"
@@ -45,17 +52,25 @@
 		android:layout_height="wrap_content"
 		android:id="@+id/type_dpg"
 		android:layout_below="@id/relative_dpg"
-		android:layout_toRightOf="@id/thumbnail_dpg"
+		android:layout_toRightOf="@id/imageframe_dpg"
 		android:textSize="5pt"
 		android:textColor="#0171F0"
 		android:singleLine="true"
 		android:layout_marginLeft="12dp"/>
+	<CheckBox
+		android:id="@+id/download_selector"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginRight="15dp"
+		android:layout_centerVertical="true"
+		android:layout_alignParentRight="true"
+		android:visibility="gone"/>
 	<ImageView
 		android:id="@+id/see_more"
 		android:src="@drawable/baseline_keyboard_arrow_right_24"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_marginRight="5dp"
+		android:layout_marginRight="19dp"
 		android:layout_centerVertical="true"
 		android:layout_alignParentRight="true"/>
 </RelativeLayout>

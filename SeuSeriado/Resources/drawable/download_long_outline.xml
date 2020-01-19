@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+  <item
+    android:height="140dp"
+    android:width="140dp">
+    <shape android:shape="oval">
+      <solid android:color="#ff505050" />
+    </shape>
+  </item>
+  <item
+    android:height="94dp"
+    android:width="100dp"
+    android:drawable="@drawable/baseline_download_long"
+    android:gravity="center" />
+</layer-list>

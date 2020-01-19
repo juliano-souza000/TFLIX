@@ -16,6 +16,7 @@ using Android.Util;
 using Android.Views;
 using Android.Widget;
 using Java.Nio;
+using SeuSeriado.Dialog;
 using Square.Picasso;
 
 namespace SeuSeriado.Adapter
@@ -37,7 +38,10 @@ namespace SeuSeriado.Adapter
         {
             public View mMain { get; set; }
             public ImageView Image { get; set; }
+            public ImageView Synopsis { get; set; }
+            public ImageView Download { get; set; }
             public TextView Title { get; set; }
+            public TextView Updated { get; set; }
 
             public MainPage_SeriesAdapterHolder(View view) : base(view)
             {
@@ -47,16 +51,19 @@ namespace SeuSeriado.Adapter
 
         public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
         {
-            View row = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.mainpage_adapter, parent, false);
+            View row = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.mainpage_row, parent, false);
             ImageView image = row.FindViewById<ImageView>(Resource.Id.thumbnail_mpg);
+            ImageView synopsis = row.FindViewById<ImageView>(Resource.Id.info_mpg);
+            ImageView download = row.FindViewById<ImageView>(Resource.Id.download_mpg);
             TextView title = row.FindViewById<TextView>(Resource.Id.title_mpg);
-            row.LongClick += (s, e) =>
-            {
-                title.RequestFocus();
-            };
+            TextView updated = row.FindViewById<TextView>(Resource.Id.updated_mpg);
+
             row.Click += Row_Click;
+            download.Click += Download_Click;
+            synopsis.Click += Synopsis_Click;
+
             image.SetScaleType(ImageView.ScaleType.CenterCrop);
-            MainPage_SeriesAdapterHolder view = new MainPage_SeriesAdapterHolder(row) { Image = image, Title = title };
+            MainPage_SeriesAdapterHolder view = new MainPage_SeriesAdapterHolder(row) { Image = image, Title = title, Updated = updated, Synopsis = synopsis, Download = download };
             return view;
         }
 
@@ -65,14 +72,82 @@ namespace SeuSeriado.Adapter
         public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
         {
             MainPage_SeriesAdapterHolder Holder = holder as MainPage_SeriesAdapterHolder;
+
+
             var title = List.GetMainPageSeries.Series[position].Title.Replace("Online,", "");
             title = title.Replace("Online ", "");
             title = title.Replace("ª Temporada Episódio ", "x");
             title = title.Replace(" LEGENDADO", "LEG");
             title = title.Replace(" DUBLADO", "DUB");
             Holder.Title.Text = title;
-            Picasso.With(context).Load(List.GetMainPageSeries.Series[position].ImgLink).Into(Holder.Image, new Action(async () => { await Task.Run(()=>List.GetMainPageSeries.Series[position].IMG64 = Base64.EncodeToString(Utils.Utils.GetImageBytes(Holder.Image.Drawable), Base64Flags.UrlSafe)); }) , new Action(() => { }));
 
+            Holder.Updated.Text = List.GetMainPageSeries.Series[position].Update;
+
+            Picasso.With(context).Load(List.GetMainPageSeries.Series[position].ImgLink).Into(Holder.Image, new Action(async () => { await Task.Run(() => List.GetMainPageSeries.Series[position].IMG64 = Base64.EncodeToString(Utils.Utils.GetImageBytes(Holder.Image.Drawable), Base64Flags.UrlSafe)); }), new Action(() => { }));
+
+            var (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(List.GetMainPageSeries.Series[position].Title);
+
+            if (!List.GetMainPageSeries.Series[position].AlreadyChecked)
+            {
+                if (List.GetMainPageSeries.Series[position].Title.Contains("LEGENDADO") || List.GetMainPageSeries.Series[position].Title.Contains("SEM LEGENDA"))
+                    List.GetMainPageSeries.Series[position].Downloaded = Utils.Database.IsItemDownloaded(Season, Show, true, Ep);
+                else
+                    List.GetMainPageSeries.Series[position].Downloaded = Utils.Database.IsItemDownloaded(Season, Show, false, Ep);
+                List.GetMainPageSeries.Series[position].AlreadyChecked = true;
+            }
+
+            if (List.GetMainPageSeries.Series[position].Downloaded)
+            {
+                Holder.Download.SetColorFilter(Android.Graphics.Color.Argb(255, 255, 255, 255));
+                Holder.Download.SetImageDrawable(context.GetDrawable(Resource.Drawable.baseline_cloud_done_24));
+            }
+            else
+            {
+                Holder.Download.SetColorFilter(null);
+                if (List.GetMainPageSeries.Series[position].Downloading)
+                    Holder.Download.SetImageDrawable(context.GetDrawable(Resource.Drawable.baseline_cloud_download_on));
+                else
+                    Holder.Download.SetImageDrawable(context.GetDrawable(Resource.Drawable.baseline_cloud_download_24));
+            }
+
+        }
+
+        private void Synopsis_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                View v = (View)sender;
+                int Pos = rec.GetChildAdapterPosition((View)v.Parent.Parent);
+                var fragmentMan = ((Activity)context).FragmentManager.BeginTransaction();
+
+                if (string.IsNullOrWhiteSpace(List.GetMainPageSeries.Series[Pos].Synopsis))
+                    List.GetMainPageSeries.Series[Pos].Synopsis = Utils.Utils.GetSynopsis(Utils.Utils.VideoPageUrl(List.GetMainPageSeries.Series[Pos].Title));
+
+                Synopsis synopsisDialog = new Synopsis();
+                synopsisDialog.SynopsisTitleString = List.GetMainPageSeries.Series[Pos].Title;
+                synopsisDialog.SynopsisContentString = List.GetMainPageSeries.Series[Pos].Synopsis;
+                synopsisDialog.Show(fragmentMan, "SDF");
+            }
+            catch { }
+        }
+
+        private void Download_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                View v = (View)sender;
+                int Pos = rec.GetChildAdapterPosition((View)v.Parent.Parent);
+
+                if (!List.GetMainPageSeries.Series[Pos].Downloading && !List.GetMainPageSeries.Series[Pos].Downloaded)
+                {
+                    var holder = rec.FindViewHolderForAdapterPosition(Pos);
+                    var dowload = holder.ItemView.FindViewById<ImageView>(Resource.Id.download_mpg);
+
+                    Utils.Utils.DownloadVideo(false, Pos, context);
+                    dowload.SetImageDrawable(context.GetDrawable(Resource.Drawable.baseline_cloud_download_on));
+                }
+            }
+            catch { }
         }
 
         private void Row_Click(object sender, EventArgs e)

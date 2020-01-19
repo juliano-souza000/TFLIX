@@ -24,8 +24,8 @@ namespace SeuSeriado.List
         public long TotalBytesEP { get; set; }
         public long Duration { get; set; }
         public bool IsSelected { get; set; }
-        public bool IsDownloading { get; set; }
         public long TimeWatched { get; set; }
+        public DownloadInfo downloadInfo { get; set; }
 
         public int Progress
         {
@@ -38,8 +38,14 @@ namespace SeuSeriado.List
                 _Progress = value;
                 try
                 {
-                    if(IsDownloading)
-                        Activities.DetailedDownloads.ProgressChanged(this.ShowSeason, this.EP);
+                    if (downloadInfo.IsDownloading)
+                    {
+                        if (Progress != 100)
+                            Event.Progress.OnProgressUpdated(this, this.ShowSeason, this.EP, this.ShowID);
+                        else
+                            Event.Progress.OnProgressCompleted(this, this.ShowSeason, this.EP, this.ShowID);
+                    }
+
                 }
                 catch { }
             }
@@ -49,15 +55,31 @@ namespace SeuSeriado.List
 
     public class AllDownloads
     {
+        public int ShowID { get; set; }
+
         public string ShowThumb { get; set; }
         public long TotalBytes { get; set; }
         public string Show { get; set; }
         public bool IsSubtitled { get; set; }
+        public bool IsSelected { get; set; }
         public List<Downloads> Episodes { get; set; }
+    }
+
+    public class DownloadInfo
+    {
+        public bool IsPaused { get; set; }
+        public bool IsDownloading { get; set; }
+        public bool IsFromSearch { get; set; }
+        public string URL { get; set; }
+        public string FullTitle { get; set; }
+        public int ListPos { get; set; }
+        public int NotificationID { get; set; }
+        public int DownloadPos { get; set; }
     }
 
     public class GetDownloads
     {
+
         public static List<AllDownloads> Series;
     }
 }

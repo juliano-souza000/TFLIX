@@ -1,18 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 using Android.App;
 using Android.Content;
 using Android.Graphics;
 using Android.OS;
-using Android.Runtime;
 using Android.Support.V7.App;
 using Android.Support.V7.Widget;
 using Android.Views;
 using Android.Widget;
 using SeuSeriado.Adapter;
+using SeuSeriado.Event;
+using SeuSeriado.Interface;
 using Toolbar = Android.Widget.Toolbar;
 
 namespace SeuSeriado.Activities
@@ -21,8 +20,8 @@ namespace SeuSeriado.Activities
     public class DetailedDownloads : Activity, IOnUserSelectItems
     {
         private static RecyclerView Episodes;
-        private Toolbar toolbar;
         private static EpisodesAdapter adapter;
+        private Toolbar toolbar;
 
         private static int Pos;
         private bool IsSelecting;
@@ -48,6 +47,10 @@ namespace SeuSeriado.Activities
             Episodes.SetLayoutManager(new LinearLayoutManager(this));
             Episodes.HasFixedSize = true;
             Episodes.SetAdapter(adapter);
+
+            Progress.Updated += Progress_Updated;
+            Progress.Completed += Progress_Completed;
+            Progress.Paused += Progress_Paused;
 
         }
 
@@ -94,7 +97,7 @@ namespace SeuSeriado.Activities
                     {
                         if (List.GetDownloads.Series[Pos].Episodes == null || List.GetDownloads.Series[Pos].Episodes.Count == 0)
                         {
-                            adapter.IsUserSelecting = false;
+                            //adapter.IsUserSelecting = false;
                             IsSelecting = false;
 
                             Finish();
@@ -119,36 +122,70 @@ namespace SeuSeriado.Activities
         {
             try
             {
+                if(List.GetDownloads.Series[Pos].Episodes != null || List.GetDownloads.Series[Pos].Episodes.Count != 0)
                 adapter.NotifyDataSetChanged();
             }
             catch { }
         }
 
-        public static void ProgressChanged(int ShowSeason, int EP)
+        private void Progress_Paused(object sender, ProgressEventArgs e)
         {
-            var epIndex = List.GetDownloads.Series[Pos].Episodes.FindIndex(x => x.EP == EP && x.ShowSeason == ShowSeason);
-
-            try
+            if (!IsSelecting)
             {
-                var holder = Episodes.FindViewHolderForAdapterPosition(epIndex);
-                var downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
-                var downloaded = holder.ItemView.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_dp);
+                var epIndex = List.GetDownloads.Series[Pos].Episodes.FindIndex(x => x.EP == e.EP && x.ShowSeason == e.ShowSeason && x.ShowID == e.ShowID);
 
-                if (List.GetDownloads.Series[Pos].Episodes[epIndex].Progress != 100)
+                try
                 {
-                    if (downloadProgress.Visibility != ViewStates.Visible)
-                        downloadProgress.Visibility = ViewStates.Visible;
-                    downloadProgress.Progress = List.GetDownloads.Series[Pos].Episodes[epIndex].Progress;
+                    var holder = Episodes.FindViewHolderForAdapterPosition(epIndex);
+                    var downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
+                    var pauseResumeDownload = holder.ItemView.FindViewById<ImageView>(Resource.Id.pauseresume_dpg_ep_dp);
+
+                    downloadProgress.Visibility = ViewStates.Gone;
+                    pauseResumeDownload.Visibility = ViewStates.Visible;
+                    List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsPaused = !List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsPaused;
+                    //adapter.NotifyItemChanged(epIndex);
                 }
-                else
+                catch { }
+            }
+        }
+
+        private void Progress_Completed(object sender, ProgressEventArgs e)
+        {
+            var epIndex = List.GetDownloads.Series[Pos].Episodes.FindIndex(x => x.EP == e.EP && x.ShowSeason == e.ShowSeason && x.ShowID == e.ShowID);
+            if (!List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsPaused && !IsSelecting)
+            {
+                try
                 {
+                    var holder = Episodes.FindViewHolderForAdapterPosition(epIndex);
+                    var downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
+                    var downloaded = holder.ItemView.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_dp);
+
                     downloadProgress.Visibility = ViewStates.Gone;
                     downloaded.Visibility = ViewStates.Visible;
                     adapter.NotifyItemChanged(epIndex);
                 }
+                catch { }
             }
-            catch { }
-            //Console.WriteLine("Progress has changed");
+        }
+
+        private void Progress_Updated(object sender, ProgressEventArgs e)
+        {
+            var epIndex = List.GetDownloads.Series[Pos].Episodes.FindIndex(x => x.EP == e.EP && x.ShowSeason == e.ShowSeason && x.ShowID == e.ShowID);
+            //Console.WriteLine(IsSelecting);
+            if (!List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsPaused && !IsSelecting)
+            {
+                try
+                {
+                    var holder = Episodes.FindViewHolderForAdapterPosition(epIndex);
+                    var downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
+                    var downloaded = holder.ItemView.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_dp);
+
+                    if (downloadProgress.Visibility != ViewStates.Visible)
+                        downloadProgress.Visibility = ViewStates.Visible;
+                    downloadProgress.Progress = List.GetDownloads.Series[Pos].Episodes[epIndex].Progress;
+                }
+                catch { }
+            }
         }
 
         public void IsUserSelecting(bool userSelecting)
@@ -166,7 +203,7 @@ namespace SeuSeriado.Activities
                 {
                     ActionBar.Subtitle = "";
 
-                    ActionBar.Title = string.Format("{0} ({1})", List.GetDownloads.Series[Pos].Episodes.Where(row => row.IsSelected).Count(), Utils.Utils.Size(List.GetDownloads.Series[Pos].Episodes.Where(row => row.IsSelected).Select(row => row.TotalBytesEP).Sum()));
+                    ActionBar.Title = string.Format("{0} ({1})", List.GetDownloads.Series[Pos].Episodes.Where(row => row.IsSelected).Count(), Utils.Utils.Size(List.GetDownloads.Series[Pos].Episodes.Where(row => row.IsSelected).Select(row => row.Bytes).Sum()));
                 }
                 else
                 {
@@ -187,10 +224,5 @@ namespace SeuSeriado.Activities
             }
             IsSelecting = userSelecting;
         }
-    }
-
-    public interface IOnUserSelectItems
-    {
-        void IsUserSelecting(bool userSelecting);
     }
 }

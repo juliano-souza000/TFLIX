@@ -9,10 +9,13 @@ using Android.App;
 using Android.Content;
 using Android.OS;
 using Android.Runtime;
+using Android.Support.V4.Widget;
 using Android.Support.V7.Widget;
 using Android.Views;
 using Android.Widget;
 using Newtonsoft.Json;
+using SeuSeriado.Adapter;
+using SeuSeriado.Event;
 using SeuSeriado.List;
 
 namespace SeuSeriado.Fragments
@@ -21,7 +24,8 @@ namespace SeuSeriado.Fragments
     {
         private RecyclerView Series;
         private ProgressBar Loading;
-        private Adapter.MainPage_SeriesAdapter adapter;
+        private MainPage_SeriesAdapter adapter;
+        private SwipeRefreshLayout _SwipeRefreshLayout;
 
         private int page = 1;
         private bool IsDownloading;
@@ -53,8 +57,9 @@ namespace SeuSeriado.Fragments
             {
                 Series = (RecyclerView)view.FindViewById(Resource.Id.popular_series);
                 Loading = (ProgressBar)view.FindViewById(Resource.Id.popular_series_loading);
+                _SwipeRefreshLayout = (SwipeRefreshLayout)view.FindViewById(Resource.Id.swipeRefreshLayout);
 
-                adapter = new Adapter.MainPage_SeriesAdapter(Application.Context, Series);
+                adapter = new MainPage_SeriesAdapter(Context, Series);
 
                 BackgroundWorker worker = new BackgroundWorker();
                 worker.DoWork += (s, ex) =>
@@ -64,21 +69,56 @@ namespace SeuSeriado.Fragments
                 };
                 worker.RunWorkerAsync();
 
-                Series.SetLayoutManager(new GridLayoutManager(Application.Context, 3));
+                Series.SetLayoutManager(new LinearLayoutManager(Application.Context));
                 Series.SetItemViewCacheSize(21);
                 Series.DrawingCacheEnabled = true;
                 Series.DrawingCacheQuality = DrawingCacheQuality.High;
 
+                Series.AddItemDecoration(new DividerItemDecoration(Series.Context, DividerItemDecoration.Vertical));
+
                 worker.RunWorkerCompleted += (s, ex) =>
                 {
                     Console.WriteLine("Done!");
-                    if (List.GetMainPageSeries.Series != null)
+                    if (GetMainPageSeries.Series != null)
                         Series.SetAdapter(adapter);
                 };
 
                 Series.ScrollChange += Series_ScrollChange;
+                _SwipeRefreshLayout.Refresh += _SwipeRefreshLayout_Refresh;
+                ShowDownload.ChangedStatus += ShowDownload_ChangedStatus;
             }
 
+        }
+
+        private void ShowDownload_ChangedStatus(object sender, StatusEventArgs e)
+        {
+            try
+            {
+                if (!e.IsFromsearch)
+                {
+                    var index = GetMainPageSeries.Series.FindIndex(x => x.Title == e.FullTitle);
+                    adapter.NotifyItemChanged(index);
+                }
+            }
+            catch { }
+        }
+
+        private void _SwipeRefreshLayout_Refresh(object sender, EventArgs e)
+        {
+            page = 1;
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.DoWork += (s, ex) =>
+            {
+                GetMainPageSeries.Series = JsonConvert.DeserializeObject<List<MainPageSeries>>(Utils.Utils.Download(page));
+            };
+            worker.RunWorkerAsync();
+
+            worker.RunWorkerCompleted += (s, ex) =>
+            {
+                if (GetMainPageSeries.Series != null)
+                    adapter.NotifyDataSetChanged();
+                _SwipeRefreshLayout.Refreshing = false;
+            };
         }
 
         private void Series_ScrollChange(object sender, View.ScrollChangeEventArgs e)

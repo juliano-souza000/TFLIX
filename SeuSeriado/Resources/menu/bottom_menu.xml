@@ -7,7 +7,7 @@
     <item
         android:id="@+id/nav_search"
         android:icon="@drawable/baseline_search"
-        android:title="Pesquisar" />
+        android:title="Buscas" />
     <item
         android:id="@+id/nav_main"
         android:icon="@drawable/baseline_home"
@@ -15,7 +15,7 @@
         android:checked="true" />
     <item
         android:id="@+id/nav_downloads"
-        android:icon="@drawable/baseline_downloads"
+        android:icon="@drawable/baseline_download_long"
         android:title="Downloads" />
   </group>
 </menu>

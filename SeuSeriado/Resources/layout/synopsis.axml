@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+	android:background="@drawable/synopsis_rounded">
+	<TextView
+		android:id="@+id/synopsis_title"
+		android:layout_margin="10dp"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textSize="8pt"
+		android:textColor="#FFF"
+		android:text="THIS IS A SYNOPSIS TITLE"
+		android:textAlignment="center"
+		android:singleLine="true" />
+	<TextView
+		android:id="@+id/synopsis_content"
+		android:layout_margin="10dp"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:textSize="7pt"
+		android:textColor="#FFF"
+		android:text="THIS IS A SYNOPSIS CONTENT"
+		android:justificationMode="inter_word"/>
+</LinearLayout>

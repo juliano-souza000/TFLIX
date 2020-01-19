@@ -2,12 +2,9 @@
 using Android.Content;
 using Android.Media;
 using Android.OS;
-using Android.Runtime;
 using Android.Support.V4.App;
 using Android.Util;
 using Android.Widget;
-using ByteSizeLib;
-using SeuSeriado.Network;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -92,8 +89,8 @@ namespace SeuSeriado.Services
 
                             (Show, ShowSeason, Ep) = Utils.Utils.BreakFullTitleInParts(List.GetMainPageSeries.Series[Pos].Title);
 
-                            FullTitle = List.GetMainPageSeries.Series[Pos].Title.Replace("SEM LEGENDA", "LEGENDADO");
-                            Thumb = List.GetMainPageSeries.Series[Pos].EPThumb.Replace("SEM LEGENDA", "LEGENDADO");
+                            FullTitle = List.GetMainPageSeries.Series[Pos].Title;
+                            Thumb = List.GetMainPageSeries.Series[Pos].EPThumb;
 
                             List.GetMainPageSeries.Series[Pos].Downloading = true;
 
@@ -134,7 +131,7 @@ namespace SeuSeriado.Services
                     else
                     {
                         bool pause = intent.Extras.GetBoolean("PauseResume");
-                        int notificationID = intent.Extras.GetInt("StartID");
+                        int notificationID = intent.Extras.GetInt("NotificationID");
                         int downloadPos = intent.Extras.GetInt("DownloadPos");
                         int listPos = intent.Extras.GetInt("ListPos");
                         bool IsFromSearch = intent.Extras.GetBoolean("IsFromSearch", false);
@@ -177,6 +174,10 @@ namespace SeuSeriado.Services
                         broadcastCancelIntent.PutExtra("DownloadPos", downloadPos);
                         broadcastCancelIntent.PutExtra("ListPos", listPos);
                         broadcastCancelIntent.PutExtra("IsFromSearch", IsFromSearch);
+                        broadcastCancelIntent.PutExtra("Show", Show);
+                        broadcastCancelIntent.PutExtra("Ep", Ep);
+                        broadcastCancelIntent.PutExtra("ShowSeason", ShowSeason);
+                        broadcastCancelIntent.PutExtra("IsSubtitled", IsSubtitled);
 
                         PendingIntent pauseresumeDownloadPI = PendingIntent.GetBroadcast(this, Utils.RequestCode.ID(), broadcastPauseResumeIntent, PendingIntentFlags.CancelCurrent);
                         PendingIntent cancelDownloadPI = PendingIntent.GetBroadcast(this, Utils.RequestCode.ID(), broadcastCancelIntent, PendingIntentFlags.CancelCurrent);
@@ -209,7 +210,20 @@ namespace SeuSeriado.Services
                 }
                 else
                 {
-                    Stop[intent.Extras.GetInt("DownloadPos")] = true;
+                    var downloadPos = intent.Extras.GetInt("DownloadPos");
+                    var NOTIFICATION_ID = intent.Extras.GetInt("NotificationID");
+                    var IsSubtitled = intent.Extras.GetBoolean("IsSubtitled", false);
+                    var IsFromSearch = intent.Extras.GetBoolean("IsFromSearch", false);
+                    var Show = intent.Extras.GetString("Show");
+                    var Ep = intent.Extras.GetInt("Ep");
+                    var ShowSeason = intent.Extras.GetInt("ShowSeason");
+                    var listPos = intent.Extras.GetInt("ListPos");
+                    var _Path = Utils.Database.GetVideoPath(IsSubtitled, Show, Ep, ShowSeason);
+
+                    Stop[downloadPos] = true;
+
+                    if (Pause[downloadPos])
+                        CancelDownload(NOTIFICATION_ID, IsSubtitled, Show, Ep, ShowSeason, _Path, IsFromSearch, listPos);
                 }
             }
             catch (Exception e)
@@ -271,6 +285,10 @@ namespace SeuSeriado.Services
             broadcastCancelIntent.PutExtra("DownloadPos", downloadPos);
             broadcastCancelIntent.PutExtra("ListPos", listPos);
             broadcastCancelIntent.PutExtra("IsFromSearch", IsFromSearch);
+            broadcastCancelIntent.PutExtra("Show", Show);
+            broadcastCancelIntent.PutExtra("Ep", Ep);
+            broadcastCancelIntent.PutExtra("ShowSeason", ShowSeason);
+            broadcastCancelIntent.PutExtra("IsSubtitled", IsSubtitled);
 
             PendingIntent pauseresumeDownloadPI = PendingIntent.GetBroadcast(this, Utils.RequestCode.ID(), broadcastPauseResumeIntent, PendingIntentFlags.CancelCurrent);
             PendingIntent cancelDownloadPI = PendingIntent.GetBroadcast(this, Utils.RequestCode.ID(), broadcastCancelIntent, PendingIntentFlags.CancelCurrent);
@@ -304,7 +322,15 @@ namespace SeuSeriado.Services
             {
                 var index = List.GetDownloads.Series.FindIndex(x => x.Show == Show && x.IsSubtitled == IsSubtitled);
                 var epIndex = List.GetDownloads.Series[index].Episodes.FindIndex(x => x.EP == Ep && x.ShowSeason == ShowSeason);
-                List.GetDownloads.Series[index].Episodes[epIndex].IsDownloading = true;
+
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.IsDownloading = true;
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.DownloadPos = downloadPos;
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.IsFromSearch = IsFromSearch;
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.URL = URL;
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.FullTitle = FullTitle;
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.ListPos = listPos;
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.NotificationID = NOTIFICATION_ID;
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.DownloadPos = downloadPos;
             }
             catch { }
 
@@ -382,13 +408,24 @@ namespace SeuSeriado.Services
                 Utils.Database.InsertData("", Show, ShowThumb, ShowSeason, 0, 0, 0, IsSubtitled, "", 0);
             Utils.Database.InsertData(Thumb, Show, ShowThumb, ShowSeason, Ep, 0, bytes_total, IsSubtitled, System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Series", FullTitle), Duration);
 
-            Utils.Database.ReadDB();
+            try
+            {
+                Utils.Database.ReadDB();
+
+                var index = List.GetDownloads.Series.FindIndex(x => x.Show == Show && x.IsSubtitled == IsSubtitled);
+                var epIndex = List.GetDownloads.Series[index].Episodes.FindIndex(x => x.EP == Ep && x.ShowSeason == ShowSeason);
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.IsDownloading = true;
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.DownloadPos = downloadPos;
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.IsFromSearch = IsFromSearch;
+
+                //Activities.DetailedDownloads.ReloadDataset();
+            }
+            catch { }
 
             if (downloadPos >= Builders.Count)
                 CreateNotification(NOTIFICATION_ID, Show, ShowSeason, Ep, bytes_total, downloadPos, URL, FullTitle, IsSubtitled, Thumb, ShowThumb, IsFromSearch, listPos);
 
-
-            download.BeginGetResponse(new AsyncCallback(result => PlayResponseAsync(result, NOTIFICATION_ID, startRange, _Path, bytes_total, Show, ShowSeason, Ep, IsSubtitled, downloadPos, IsFromSearch, listPos)), download);
+            download.BeginGetResponse(new AsyncCallback(result => PlayResponseAsync(result, NOTIFICATION_ID, startRange, _Path, bytes_total, Show, ShowSeason, Ep, IsSubtitled, downloadPos, IsFromSearch, listPos, URL, FullTitle)), download);
 
         }
 
@@ -396,9 +433,14 @@ namespace SeuSeriado.Services
         {
             Utils.Database.UpdateProgress(Show, ShowSeason, Ep, 100, bytes_total, IsSubtitled);
 
-            var index = List.GetDownloads.Series.FindIndex(x => x.Show == Show && x.IsSubtitled == IsSubtitled);
-            var epIndex = List.GetDownloads.Series[index].Episodes.FindIndex(x => x.EP == Ep && x.ShowSeason == ShowSeason);
-            List.GetDownloads.Series[index].Episodes[epIndex].Progress = 100;
+            try
+            {
+                var index = List.GetDownloads.Series.FindIndex(x => x.Show == Show && x.IsSubtitled == IsSubtitled);
+                var epIndex = List.GetDownloads.Series[index].Episodes.FindIndex(x => x.EP == Ep && x.ShowSeason == ShowSeason);
+                List.GetDownloads.Series[index].Episodes[epIndex].Progress = 100;
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.IsDownloading = false;
+            }
+            catch { }
 
             var builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                .SetSmallIcon(Resource.Drawable.baseline_mobile_friendly_24)
@@ -412,11 +454,27 @@ namespace SeuSeriado.Services
             notificationManager.Notify(NOTIFICATION_ID, builder.Build());
         }
 
-        private int DownloadProgressChanged(long received, int NOTIFICATION_ID, int PreviousPercentage, long bytes_total, string Show, int ShowSeason, int Ep, bool IsSubtitled, int downloadPos)
+        private int DownloadProgressChanged(long received, int NOTIFICATION_ID, int PreviousPercentage, long bytes_total, string Show, int ShowSeason, int Ep, bool IsSubtitled, int downloadPos, bool IsFromSearch, string URL, string FullTitle, int listPos)
         {
             int percentage = (int)(received / (bytes_total / 100));
 
             //builder.SetOngoing(true);
+
+            try
+            {
+                if (IsFromSearch)
+                {
+                    var index = List.GetSearch.Search.FindIndex(x => x.Title == FullTitle);
+                    List.GetSearch.Search[index].Downloading = true;
+                }
+                else
+                {
+                    var index = List.GetMainPageSeries.Series.FindIndex(x => x.Title == FullTitle);
+                    List.GetMainPageSeries.Series[index].Downloading = true;
+                }
+                Event.ShowDownload.OnChangedStatus(this, FullTitle, IsFromSearch);
+            }
+            catch { }
 
             if (PreviousPercentage != percentage && received != bytes_total)
             {
@@ -430,9 +488,10 @@ namespace SeuSeriado.Services
                 {
                     var index = List.GetDownloads.Series.FindIndex(x => x.Show == Show && x.IsSubtitled == IsSubtitled);
                     var epIndex = List.GetDownloads.Series[index].Episodes.FindIndex(x => x.EP == Ep && x.ShowSeason == ShowSeason);
+
+                    List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.IsDownloading = true;
                     List.GetDownloads.Series[index].Episodes[epIndex].Progress = percentage;
                     List.GetDownloads.Series[index].Episodes[epIndex].Bytes = received;
-                    List.GetDownloads.Series[index].Episodes[epIndex].IsDownloading = true;
                 }
                 catch { }
 
@@ -452,7 +511,31 @@ namespace SeuSeriado.Services
             return (int)(received / (bytes_total / 100));
         }
 
-        private async void PlayResponseAsync(IAsyncResult asyncResult, int NOTIFICATION_ID, long startRange, string _Path, long bytes_total, string Show, int ShowSeason, int Ep, bool IsSubtitled, int downloadPos, bool IsFromSearch, int listPos)
+        private void CancelDownload(int NOTIFICATION_ID, bool IsSubtitled, string Show, int Ep, int ShowSeason, string _Path, bool IsFromSearch, int listPos)
+        {
+            notificationManager.Cancel(NOTIFICATION_ID);
+            Utils.Database.DeleteItem(IsSubtitled, Show, Ep, ShowSeason);
+            File.Delete(_Path);
+
+            try
+            {
+                if (IsFromSearch)
+                    List.GetSearch.Search[listPos].Downloading = false;
+                else
+                    List.GetMainPageSeries.Series[listPos].Downloading = false;
+            }
+            catch { }
+
+            try
+            {
+                var index = List.GetDownloads.Series.FindIndex(x => x.Show == Show && x.IsSubtitled == IsSubtitled);
+                var epIndex = List.GetDownloads.Series[index].Episodes.FindIndex(x => x.EP == Ep && x.ShowSeason == ShowSeason);
+                List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.IsDownloading = false;
+            }
+            catch { }
+        }
+
+        private async void PlayResponseAsync(IAsyncResult asyncResult, int NOTIFICATION_ID, long startRange, string _Path, long bytes_total, string Show, int ShowSeason, int Ep, bool IsSubtitled, int downloadPos, bool IsFromSearch, int listPos, string URL, string FullTitle)
         {
             long received = startRange;
             int PreviousPercentage = 0;
@@ -480,7 +563,7 @@ namespace SeuSeriado.Services
                             
                             await Task.Run(() =>
                             { 
-                                PreviousPercentage = DownloadProgressChanged(received, NOTIFICATION_ID, PreviousPercentage, bytes_total, Show, ShowSeason, Ep, IsSubtitled, downloadPos);
+                                PreviousPercentage = DownloadProgressChanged(received, NOTIFICATION_ID, PreviousPercentage, bytes_total, Show, ShowSeason, Ep, IsSubtitled, downloadPos, IsFromSearch, URL, FullTitle, listPos);
                             });
 
                             size = input.Read(buffer, 0, buffer.Length);
@@ -498,30 +581,19 @@ namespace SeuSeriado.Services
                         if (!Pause[downloadPos])
                         {
                             DownloadFileCompleted(NOTIFICATION_ID, Show, ShowSeason, Ep, bytes_total, IsSubtitled);
-                            if (IsFromSearch)
-                                List.GetSearch.Search[listPos].Downloading = false;
-                            else
-                                List.GetMainPageSeries.Series[listPos].Downloading = false;
+                            try
+                            {
+                                if (IsFromSearch)
+                                    List.GetSearch.Search[listPos].Downloading = false;
+                                else
+                                    List.GetMainPageSeries.Series[listPos].Downloading = false;
+                            }
+                            catch { }
                         }
                     }
                     else
                     {
-                        notificationManager.Cancel(NOTIFICATION_ID);
-                        Utils.Database.DeleteItem(IsSubtitled, Show, Ep, ShowSeason);
-                        File.Delete(_Path);
-
-                        if (IsFromSearch)
-                            List.GetSearch.Search[listPos].Downloading = false;
-                        else
-                            List.GetMainPageSeries.Series[listPos].Downloading = false;
-
-                        try
-                        {
-                            var index = List.GetDownloads.Series.FindIndex(x => x.Show == Show && x.IsSubtitled == IsSubtitled);
-                            var epIndex = List.GetDownloads.Series[index].Episodes.FindIndex(x => x.EP == Ep && x.ShowSeason == ShowSeason);
-                            List.GetDownloads.Series[index].Episodes[epIndex].IsDownloading = false;
-                        }
-                        catch { }
+                        CancelDownload(NOTIFICATION_ID, IsSubtitled, Show, Ep, ShowSeason, _Path, IsFromSearch, listPos);
                     }
                 }
             }
@@ -541,23 +613,26 @@ namespace SeuSeriado.Services
                    .SetOnlyAlertOnce(true);
 
                 notificationManager.Notify(NOTIFICATION_ID, Builders[downloadPos].Build());
-                if (IsFromSearch)
-                    List.GetSearch.Search[listPos].Downloading = false;
-                else
-                    List.GetMainPageSeries.Series[listPos].Downloading = false;
+                try
+                {
+                    if (IsFromSearch)
+                        List.GetSearch.Search[listPos].Downloading = false;
+                    else
+                        List.GetMainPageSeries.Series[listPos].Downloading = false;
+                }
+                catch { }
 
                 try
                 {
                     var index = List.GetDownloads.Series.FindIndex(x => x.Show == Show && x.IsSubtitled == IsSubtitled);
                     var epIndex = List.GetDownloads.Series[index].Episodes.FindIndex(x => x.EP == Ep && x.ShowSeason == ShowSeason);
-                    List.GetDownloads.Series[index].Episodes[epIndex].IsDownloading = false;
+                    List.GetDownloads.Series[index].Episodes[epIndex].downloadInfo.IsDownloading = false;
                 }
                 catch { }
             }
         }
 
     }
-
 
     [BroadcastReceiver(Enabled = true)]
     [IntentFilter(new string[] { "com.toddy.tflix.PAUSERESUMEDOWNLOAD", "com.toddy.tflix.CANCELDOWNLOAD" })]
@@ -571,7 +646,11 @@ namespace SeuSeriado.Services
             int ServiceNotificationID = 0;
             int downloadPos = 0;
             int listPos = 0;
+            int Ep = 0;
+            int ShowSeason = 0;
             bool IsFromSearch = false;
+            bool IsSubtitled = false;
+            string Show = "";
 
             if (notificationManager == null)
                 notificationManager = (NotificationManager)context.GetSystemService(Context.NotificationService);
@@ -583,7 +662,11 @@ namespace SeuSeriado.Services
                 ServiceNotificationID = intent.Extras.GetInt("NotificationID");
                 downloadPos = intent.Extras.GetInt("DownloadPos");
                 listPos = intent.Extras.GetInt("ListPos");
+                Ep = intent.Extras.GetInt("Ep");
+                ShowSeason = intent.Extras.GetInt("ShowSeason");
                 IsFromSearch = intent.Extras.GetBoolean("IsFromSearch", false);
+                IsSubtitled = intent.Extras.GetBoolean("IsSubtitled", false);
+                Show = intent.Extras.GetString("Show");
             }
             catch { }
 
@@ -594,16 +677,17 @@ namespace SeuSeriado.Services
 
                     string URL = intent.Extras.GetString("URL");
                     string FullTitle = intent.Extras.GetString("FullTitle");
-                    string Show = intent.Extras.GetString("Show");
-                    int Ep = intent.Extras.GetInt("Ep");
-                    int ShowSeason = intent.Extras.GetInt("ShowSeason");
-                    bool IsSubtitled = intent.Extras.GetBoolean("IsSubtitled");
                     string Thumb = intent.Extras.GetString("Thumb");
                     string ShowThumb = intent.Extras.GetString("ShowThumb");
 
+                    var index = List.GetDownloads.Series.FindIndex(x => x.Show == Show && x.IsSubtitled == IsSubtitled);
+                    var epIndex = List.GetDownloads.Series[index].Episodes.FindIndex(x => x.EP == Ep && x.ShowSeason == ShowSeason);
+
+                    Event.Progress.OnProgressPaused(this, ShowSeason, Ep, List.GetDownloads.Series[index].Episodes[epIndex].ShowID);
+
                     Intent intentPauseResume = new Intent(context, typeof(DownloadFilesService));
                     intentPauseResume.PutExtra("IsRequestingPauseResume", true);
-                    intentPauseResume.PutExtra("StartID", ServiceNotificationID);
+                    intentPauseResume.PutExtra("NotificationID", ServiceNotificationID);
                     intentPauseResume.PutExtra("PauseResume", pause);
                     intentPauseResume.PutExtra("DownloadPos", downloadPos);
                     intentPauseResume.PutExtra("ListPos", listPos);
@@ -624,10 +708,14 @@ namespace SeuSeriado.Services
 
                     Intent intentCancel = new Intent(context, typeof(DownloadFilesService));
                     intentCancel.PutExtra("IsRequestingStop", true);
-                    intentCancel.PutExtra("StartID", ServiceNotificationID);
+                    intentCancel.PutExtra("NotificationID", ServiceNotificationID);
                     intentCancel.PutExtra("DownloadPos", downloadPos);
                     intentCancel.PutExtra("ListPos", listPos);
                     intentCancel.PutExtra("IsFromSearch", IsFromSearch);
+                    intentCancel.PutExtra("IsSubtitled", IsSubtitled);
+                    intentCancel.PutExtra("Ep", Ep);
+                    intentCancel.PutExtra("ShowSeason", ShowSeason);
+                    intentCancel.PutExtra("Show", Show);
 
                     context.StartService(intentCancel);
                     break;

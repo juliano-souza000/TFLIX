@@ -5,7 +5,6 @@
     android:layout_height="match_parent">
 	<TextView
 		android:layout_marginTop="2dp"
-		android:layout_marginLeft="15dp"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:text="TITLE"
@@ -13,9 +12,7 @@
 		android:textColor="#000"
 		android:id="@+id/downloadn_title"/>
 	<ProgressBar
-		android:layout_marginLeft="15dp"
 		android:layout_marginTop="5dp"
-		android:layout_marginRight="15dp"
 		android:layout_width="match_parent"
 		android:layout_height="3.5dp"
 		android:layout_below="@id/downloadn_title"
@@ -24,7 +21,6 @@
 		android:id="@+id/downloadn_progress"/>
 	<TextView
 		android:layout_marginTop="5dp"
-		android:layout_marginLeft="15dp"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:text="S1:E1"
@@ -34,10 +30,9 @@
 		android:id="@+id/downloadn_se"/>
 	<TextView
 		android:layout_marginBottom="5dp"
-		android:layout_marginLeft="15dp"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:text="PERC"
+		android:text=" 0% {0 MB/0 MB}"
 		android:textSize="6pt"
 		android:textColor="#A0A0A0"
 		android:layout_below="@id/downloadn_se"

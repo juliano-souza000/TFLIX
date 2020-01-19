@@ -73,9 +73,13 @@
     <Compile Include="Adapter\EpisodesAdapter.cs" />
     <Compile Include="Adapter\MainPage_SeriesAdapter.cs" />
     <Compile Include="Adapter\SearchAdapter.cs" />
+    <Compile Include="Dialog\Synopsis.cs" />
+    <Compile Include="Event\Progress.cs" />
+    <Compile Include="Event\ShowDownload.cs" />
     <Compile Include="Fragments\DownloadsFragment.cs" />
     <Compile Include="Fragments\SearchFragment.cs" />
     <Compile Include="Fragments\MainPageFragment.cs" />
+    <Compile Include="Interface\IOnUserSelectItems.cs" />
     <Compile Include="List\Downloads.cs" />
     <Compile Include="List\MainPageSeries.cs" />
     <Compile Include="List\Search.cs" />
@@ -126,6 +130,9 @@
     <PackageReference Include="Jint">
       <Version>2.11.58</Version>
     </PackageReference>
+    <PackageReference Include="morelinq">
+      <Version>3.3.2</Version>
+    </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>12.0.3</Version>
     </PackageReference>
@@ -155,7 +162,7 @@
     </AndroidResource>
   </ItemGroup>
   <ItemGroup>
-    <AndroidResource Include="Resources\layout\mainpage_adapter.axml">
+    <AndroidResource Include="Resources\layout\mainpage_row.axml">
       <SubType>Designer</SubType>
     </AndroidResource>
   </ItemGroup>
@@ -165,7 +172,6 @@
     </AndroidResource>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Dialog\" />
     <Folder Include="Resources\mipmap-anydpi-v26\" />
     <Folder Include="Views\" />
   </ItemGroup>
@@ -317,6 +323,37 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\drawable\ripple.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\nodownloads_layout.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\baseline_download_long.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\download_long_outline.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\download_paused_outline.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\baseline_info_24.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\baseline_info_outline_24.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\synopsis.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\rounded_dialog.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\synopsis_rounded.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
