@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+	<TextView
+		android:id="@+id/notfound_title"
+		android:layout_marginRight="10dp"
+		android:layout_marginLeft="15dp"
+		android:layout_marginTop="20dp"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textSize="7.5pt"
+		android:textColor="#FFF"
+		android:text="Ah, que pena. Infelizmente não encontramos a série desejada." />
+	<TextView
+		android:id="@+id/notfound_content"
+		android:layout_margin="15dp"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:textSize="7pt"
+		android:textColor="#999"
+		android:text="Por favor, tente procurar por outra série."
+		android:justificationMode="inter_word"/>
+</LinearLayout>
