@@ -14,26 +14,16 @@ namespace TFlix.Event
 {
     class Download
     {
-        public static event EventHandler<StatusEventArgs> ChangedStatus;
+        public static event EventHandler<ProgressEventArgs> ChangedStatus;
 
-        protected static void OnChangedStatus(object sender, StatusEventArgs e)
+        protected static void OnChangedStatus(object sender, ProgressEventArgs e)
         {
             ChangedStatus?.Invoke(sender, e);
         }
 
-        public static void OnChangedStatus(object sender, string fullTitle)
+        public static void OnChangedStatus(object sender, int showSeason, int ep, int showID)
         {
-            OnChangedStatus(sender, new StatusEventArgs(fullTitle));
+            OnChangedStatus(sender, new ProgressEventArgs(showSeason, ep, showID));
         }
-    }
-
-    class StatusEventArgs : EventArgs
-    {
-        public StatusEventArgs(string fullTitle)
-        {
-            FullTitle = fullTitle;
-        }
-
-        public string FullTitle { get; }
     }
 }

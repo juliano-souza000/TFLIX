@@ -17,7 +17,7 @@ using Toolbar = Android.Widget.Toolbar;
 
 namespace TFlix.Fragments
 {
-    class DownloadsFragment : Fragment, IOnUserSelectItems
+    class DownloadsFragment : Android.Support.V4.App.Fragment, IOnUserSelectItems
     {
         private RecyclerView Series;
         private DownloadsAdapter adapter;
@@ -43,7 +43,7 @@ namespace TFlix.Fragments
             else
             {
                 HasDownloads = true;
-                SetHasOptionsMenu(true);
+                HasOptionsMenu = true;
                 return inflater.Inflate(Resource.Layout.downloads_fragment, null);
             }
         }

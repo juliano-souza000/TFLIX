@@ -17,40 +17,45 @@ using Square.Picasso;
 using Xamarin.Essentials;
 using Encoding = System.Text.Encoding;
 using Newtonsoft.Json;
+using Android.Gms.Ads;
+using Android.Gms.Ads.Formats;
+using Android.Content.Res;
 
 namespace TFlix.Activities
 {
     [Activity(Label = "Player", ScreenOrientation = Android.Content.PM.ScreenOrientation.Landscape, ConfigurationChanges = Android.Content.PM.ConfigChanges.Orientation | Android.Content.PM.ConfigChanges.KeyboardHidden | Android.Content.PM.ConfigChanges.ScreenSize)]
-    public class Player : Activity, ISurfaceHolderCallback,MediaPlayer.IOnPreparedListener, MediaPlayer.IOnSeekCompleteListener
+    public class Player : Activity, ISurfaceHolderCallback,MediaPlayer.IOnPreparedListener, MediaPlayer.IOnSeekCompleteListener, UnifiedNativeAd.IOnUnifiedNativeAdLoadedListener
     {
-        WebClient request = new WebClient();
-        BackgroundWorker worker = new BackgroundWorker();
+        private WebClient request = new WebClient();
+        private BackgroundWorker worker = new BackgroundWorker();
+        private UnifiedNativeAd _NativeAd;
 
         //CustomMediaController
-        ImageView PlayPause;
-        ImageView Download;
-        ImageView HD;
-        ImageView Subtitles;
-        TextView EndTime;
-        TextView CurrentTime;
-        TextView PTitle;
-        SeekBar SeekBarPlayer;
-        RelativeLayout ControllerLayout;
+        private ImageView PlayPause;
+        private ImageView Download;
+        private ImageView HD;
+        private ImageView Subtitles;
+        private TextView EndTime;
+        private TextView CurrentTime;
+        private TextView PTitle;
+        private SeekBar SeekBarPlayer;
+        private RelativeLayout ControllerLayout;
 
-        TextView Subtitle;
-        ImageView Thumbnail;
-        ProgressBar Loading;
-        SurfaceView SSurfaceView;
-        ISurfaceHolder SSurfaceHolder;
-        MediaPlayer player;
-        Bundle bundle;
-        Xamarin.Essentials.NetworkAccess current;
+        private TextView Subtitle;
+        private ImageView Thumbnail;
+        private ProgressBar Loading;
+        private SurfaceView SSurfaceView;
+        private ISurfaceHolder SSurfaceHolder;
+        private MediaPlayer player;
+        private FrameLayout _FrameLayout;
+        private Xamarin.Essentials.NetworkAccess current;
 
-        System.Timers.Timer timer = new System.Timers.Timer();
-        System.Timers.Timer CloseControlTimer = new System.Timers.Timer();
-        System.Timers.Timer ResetClickCounter = new System.Timers.Timer();
+        private System.Timers.Timer timer = new System.Timers.Timer();
+        private System.Timers.Timer CloseControlTimer = new System.Timers.Timer();
+        private System.Timers.Timer ResetClickCounter = new System.Timers.Timer();
 
-        private const int DOWNLOAD_MANAGER_ID = 1;
+        private bool HasAdFinished = false;
+
         private int Pos;
         private int x = 0;
         private int ClickCount = 0;
@@ -73,11 +78,9 @@ namespace TFlix.Activities
         {
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.VideoPlayer);
-
+           
             Window.SetFlags(WindowManagerFlags.Fullscreen, WindowManagerFlags.Fullscreen);
             Window.AddFlags(WindowManagerFlags.KeepScreenOn);
-
-            bundle = savedInstanceState;
 
             try
             {
@@ -89,14 +92,14 @@ namespace TFlix.Activities
             SSurfaceView = (SurfaceView)FindViewById(Resource.Id.player);
             Thumbnail = (ImageView)FindViewById(Resource.Id.player_thumbnail);
             Loading = (ProgressBar)FindViewById(Resource.Id.player_loading);
+            _FrameLayout = (FrameLayout)FindViewById(Resource.Id.fl_adplaceholder);
 
             //+-----------------------------------------+
             //|Media Controller Declaration             |
             //+-----------------------------------------+
             //PlayPause is the play/pause button
             //Download is the download button
-            //HD is the indicator for current video quality mode
-            //Subtitles is the button for activating/deactivating subtitles
+            //HD is the indicator for current video quality mode//Subtitles is the button for activating/deactivating subtitles
             //CurrentTime is the textview on left side of seekbar, indicates the current time of the show
             //Endtime is the textview on the right side of seekbar, indicates the total time of the show
             //PTitle is the title of the current show
@@ -117,6 +120,7 @@ namespace TFlix.Activities
             SSurfaceHolder.AddCallback(this);
 
             Pos = Intent.Extras.GetInt("Pos");
+            IsOnline = Intent.Extras.GetBoolean("IsOnline");
 
             ControllerLayout.Visibility = ViewStates.Gone;
             Loading.Visibility = ViewStates.Gone;
@@ -126,6 +130,9 @@ namespace TFlix.Activities
             CloseControlTimer.Interval = 2000;
 
             current = Connectivity.NetworkAccess;
+
+            if (IsOnline)
+                StartAd();
 
             Connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
             CloseControlTimer.Elapsed += CloseControlTimer_Elapsed;
@@ -139,20 +146,36 @@ namespace TFlix.Activities
             PlayPause.Click += PlayPause_Click;
         }
 
+        protected override void OnSaveInstanceState(Bundle outState) { }
+
         protected override void OnStop()
         {
             base.OnStop();
         }
 
+        protected override void OnResume()
+        {
+            if (!HasAdFinished && _NativeAd != null)
+                _NativeAd.VideoController.Play();
+            base.OnResume();
+        }
+
         protected override void OnPause()
         {
-            Pause();
+            if (HasAdFinished)
+                Pause();
+            else
+                if(_NativeAd != null)
+                _NativeAd.VideoController.Pause();
             base.OnPause();
         }
 
         protected override void OnDestroy()
         {
-            Utils.Bookmark.UpdateBookmarkInMillisecond(Show, Ep, Season, IsSubtitled, player.CurrentPosition);
+            if(player.CurrentPosition >= player.Duration)
+                Utils.Bookmark.UpdateBookmarkInMillisecond(Show, Ep, Season, IsSubtitled, 0);
+            else
+                Utils.Bookmark.UpdateBookmarkInMillisecond(Show, Ep, Season, IsSubtitled, player.CurrentPosition);
 
             try
             {
@@ -160,6 +183,9 @@ namespace TFlix.Activities
                 player.Release();
             }
             catch { }
+
+            if (_NativeAd != null)
+                _NativeAd.Destroy();
 
             timer.Stop();
             CloseControlTimer.Stop();
@@ -176,7 +202,7 @@ namespace TFlix.Activities
             SSurfaceView.Touch -= TouchEv;
             ControllerLayout.Touch -= TouchEv;
             PlayPause.Click -= PlayPause_Click;
-
+            Connectivity.ConnectivityChanged -= Connectivity_ConnectivityChanged;
             base.OnDestroy();
         }
 
@@ -192,12 +218,18 @@ namespace TFlix.Activities
                         Start();
                         break;
                     case Xamarin.Essentials.NetworkAccess.None:
+                        if (_NativeAd != null)
+                        {
+                            _NativeAd.Destroy();
+                            _FrameLayout.RemoveAllViews();
+                        }
                         Loading.Visibility = ViewStates.Visible;
                         Loading.BringToFront();
                         Pause();
                         break;
                 }
             }
+
         }
 
         private void Download_Click(object sender, EventArgs e)
@@ -457,7 +489,11 @@ namespace TFlix.Activities
                     }
                     catch
                     {
-                        Toast.MakeText(this, "Erro. Não foi possivel carregar a thumbnail.", ToastLength.Short).Show();
+                        RunOnUiThread(() =>
+                        {
+                            Toast.MakeText(this, "Erro. Não foi possivel carregar a thumbnail.", ToastLength.Short).Show();
+                            Thumbnail.Visibility = ViewStates.Gone;
+                        });
                     }
                 };
                 worker.RunWorkerAsync();
@@ -474,6 +510,7 @@ namespace TFlix.Activities
             }
             catch
             {
+                Thumbnail.Visibility = ViewStates.Gone;
                 Toast.MakeText(this, "Erro. Não foi possivel carregar a thumbnail.", ToastLength.Short).Show();
             }
         }
@@ -554,8 +591,11 @@ namespace TFlix.Activities
 
                         if (VideoPlayerDataString.Contains("Error"))
                         {
-                            Toast.MakeText(this, "Esse título não está disponivel no momento. Por favor, tente novamente mais tarde.", ToastLength.Long).Show();
-                            this.Finish();
+                            RunOnUiThread(() =>
+                            {
+                                Toast.MakeText(this, "Esse título não está disponivel no momento. Por favor, tente novamente mais tarde.", ToastLength.Long).Show();
+                                this.Finish();
+                            });
                         }
                         else
                         {
@@ -582,8 +622,11 @@ namespace TFlix.Activities
                     }
                     catch
                     {
-                        Toast.MakeText(this, "Esse título não está disponivel no momento. Por favor, tente novamente mais tarde.", ToastLength.Long).Show();
-                        this.Finish();
+                        RunOnUiThread(() =>
+                        {
+                            Toast.MakeText(this, "Esse título não está disponivel no momento. Por favor, tente novamente mais tarde.", ToastLength.Long).Show();
+                            this.Finish();
+                        });
                     }
                 }
             };
@@ -600,9 +643,8 @@ namespace TFlix.Activities
             player.Info += Player_Info;
             player.Completion += Player_Completion;
 
-            if (Intent.Extras.GetBoolean("IsOnline"))
+            if (IsOnline)
             {
-                IsOnline = true;
                 if (!Intent.Extras.GetBoolean("IsFromSearch"))
                 {
                     IsFromSearch = false;
@@ -736,7 +778,7 @@ namespace TFlix.Activities
 
             player.SetOnSeekCompleteListener(this);
 
-            if(current == Xamarin.Essentials.NetworkAccess.Internet)
+            if(current == Xamarin.Essentials.NetworkAccess.Internet && HasAdFinished || !IsOnline)
                 Start();
 
             EndTime.Text = StringForTime(player.Duration);
@@ -778,10 +820,15 @@ namespace TFlix.Activities
             PTitle.Text = PTitle.Text.Replace("Online ", "");
 
             SeekTo((int)BookmarkInMillisecond);
+            if (current == Xamarin.Essentials.NetworkAccess.Internet && HasAdFinished || !IsOnline)
+            {
+                timer.Interval = 10;
+                timer.Enabled = true;
+                timer.AutoReset = true;
+            }
 
-            timer.Interval = 10;
-            timer.Enabled = true;
-            timer.AutoReset = true;
+            if (!IsOnline)
+                Start();
 
             if (!IsListenerEnabled)
             {
@@ -821,11 +868,14 @@ namespace TFlix.Activities
 
         private void Start()
         {
-            Window.AddFlags(WindowManagerFlags.KeepScreenOn);
-            PlayPause.SetImageResource(Resource.Drawable.baseline_pause_24);
-            player.Start();
-            timer.Interval = 10;
-            timer.Start();
+            if ((IsOnline && current == Xamarin.Essentials.NetworkAccess.Internet) || !IsOnline)
+            {
+                Window.AddFlags(WindowManagerFlags.KeepScreenOn);
+                PlayPause.SetImageResource(Resource.Drawable.baseline_pause_24);
+                player.Start();
+                timer.Interval = 10;
+                timer.Start();
+            }
         }
 
         private void SetSubtitles()
@@ -908,8 +958,9 @@ namespace TFlix.Activities
         public void OnSeekComplete(MediaPlayer mp)
         {
             System.Threading.Thread.Sleep(200);
-            Console.WriteLine(StringForTime(player.CurrentPosition));
-            Start();
+            //Console.WriteLine(StringForTime(player.CurrentPosition));
+            if (current == Xamarin.Essentials.NetworkAccess.Internet && HasAdFinished || !IsOnline)
+                Start();
         }
 
         private void GetSubtitleIndex()
@@ -936,6 +987,181 @@ namespace TFlix.Activities
 
                 }
 
+            }
+        }
+
+        private void StartAd()
+        {
+            AdLoader.Builder builder = new AdLoader.Builder(this, GetString(Resource.String.ad_unit_video_id));
+            builder.ForUnifiedNativeAd(this);
+            VideoOptions videoOptions = new VideoOptions.Builder().SetStartMuted(false).Build();
+            NativeAdOptions adOptions = new NativeAdOptions.Builder().SetVideoOptions(videoOptions).Build();
+
+            builder.WithNativeAdOptions(adOptions);
+
+            AdLoader adLoader = builder.WithAdListener(new VideoAdListener(this)).Build();
+
+            adLoader.LoadAd(new AdRequest.Builder().Build());
+            //adLoader.LoadAd(new AdRequest.Builder().AddTestDevice("898E71950C45AB644AEFAC8F2CA3857D").Build());
+        }
+
+        public void OnUnifiedNativeAdLoaded(UnifiedNativeAd ad)
+        {
+            // You must call destroy on old ads when you are done with them,
+            // otherwise you will have a memory leak.
+            if (_NativeAd != null)
+            {
+                _NativeAd.Destroy();
+            }
+            _NativeAd = ad;
+            
+            UnifiedNativeAdView adView = (UnifiedNativeAdView)LayoutInflater.Inflate(Resource.Layout.ad_unified, null);
+            PopulateUnifiedNativeAdView(ad, adView);
+            _FrameLayout.RemoveAllViews();
+            _FrameLayout.AddView(adView);
+            _FrameLayout.BringToFront();
+        }
+
+        private void PopulateUnifiedNativeAdView(UnifiedNativeAd nativeAd, UnifiedNativeAdView adView)
+        {
+            // Set the media view. Media content will be automatically populated in the media view once
+            // adView.setNativeAd() is called.
+            MediaView mediaView = (MediaView)adView.FindViewById(Resource.Id.ad_media);
+            adView.MediaView = mediaView;
+
+            // Set other ad assets.
+            adView.HeadlineView = adView.FindViewById(Resource.Id.ad_headline);
+            adView.CallToActionView = adView.FindViewById(Resource.Id.ad_call_to_action);
+            adView.IconView = adView.FindViewById(Resource.Id.ad_app_icon);
+            adView.PriceView = adView.FindViewById(Resource.Id.ad_price);
+            adView.AdvertiserView = adView.FindViewById(Resource.Id.ad_advertiser);
+
+            var skipAd = (RelativeLayout)adView.FindViewById(Resource.Id.skip_ad);
+
+            skipAd.Click += (s, e) =>
+            {
+                HasAdFinished = true;
+                _NativeAd.Destroy();
+                _FrameLayout.RemoveAllViews();
+                Start();
+            };
+
+            // The headline is guaranteed to be in every UnifiedNativeAd.
+            ((TextView)adView.HeadlineView).Text = nativeAd.Headline;
+
+            // These assets aren't guaranteed to be in every UnifiedNativeAd, so it's important to
+            // check before trying to display them.
+            if (nativeAd.CallToAction == null)
+            {
+                adView.CallToActionView.Visibility = ViewStates.Invisible;
+            }
+            else
+            {
+                adView.CallToActionView.Visibility = ViewStates.Visible;
+                ((Button)adView.CallToActionView).Text = nativeAd.CallToAction;
+            }
+
+            if (nativeAd.Icon == null)
+            {
+                adView.IconView.Visibility = ViewStates.Gone;
+            }
+            else
+            {
+                ((ImageView)adView.IconView).SetImageDrawable(nativeAd.Icon.Drawable);
+                adView.IconView.Visibility = ViewStates.Visible;
+            }
+
+            if (nativeAd.Price == null)
+            {
+                adView.PriceView.Visibility = ViewStates.Invisible;
+            }
+            else
+            {
+                adView.PriceView.Visibility = ViewStates.Visible;
+                ((TextView)adView.PriceView).Text = nativeAd.Price;
+            }
+
+            if (nativeAd.Advertiser == null)
+            {
+                adView.AdvertiserView.Visibility = ViewStates.Invisible;
+            }
+            else
+            {
+                ((TextView)adView.AdvertiserView).Text = nativeAd.Advertiser;
+                adView.AdvertiserView.Visibility = ViewStates.Visible;
+            }
+
+            // This method tells the Google Mobile Ads SDK that you have finished populating your
+            // native ad view with this native ad. The SDK will populate the adView's MediaView
+            // with the media content from this native ad.
+            adView.SetNativeAd(nativeAd);
+
+            // Get the video controller for the ad. One will always be provided, even if the ad doesn't
+            // have a video asset.
+            VideoController vc = nativeAd.VideoController;
+
+            // Updates the UI to say whether or not this ad has a video asset.
+            if (vc.HasVideoContent)
+            {
+                vc.SetVideoLifecycleCallbacks(new VideoCallback(this));
+                Loading.Visibility = ViewStates.Gone;
+                skipAd.PostDelayed(() => skipAd.Visibility = ViewStates.Visible, 5000);
+                Console.WriteLine(string.Format("Video status: Ad contains a {0:F2} video asset.",vc.AspectRatio));
+            }
+            else
+            {
+                Console.WriteLine("Video status: Ad does not contain a video asset.");
+                HasAdFinished = true;
+                _NativeAd.Destroy();
+                _FrameLayout.RemoveAllViews();
+                Start();
+            }
+        }
+
+        public class VideoAdListener : AdListener
+        {
+            Player player;
+
+            public VideoAdListener(Player pl)
+            {
+                player = pl;
+            }
+
+            public override void OnAdFailedToLoad(int p0)
+            {
+                player.HasAdFinished = true;
+                player.Loading.Visibility = ViewStates.Visible;
+                player.Loading.BringToFront();
+                try { player._NativeAd.Destroy(); } catch { }
+                player._FrameLayout.RemoveAllViews();
+                player.Start();
+                base.OnAdFailedToLoad(p0);
+            }
+        }
+
+        public class VideoCallback : VideoController.VideoLifecycleCallbacks
+        {
+            Player player;
+
+            public VideoCallback(Player pl)
+            {
+                player = pl;
+            }
+
+            public override void OnVideoStart()
+            {
+                player.Loading.Visibility = ViewStates.Gone;
+                base.OnVideoStart();
+            }
+
+            public override void OnVideoEnd()
+            {
+                player.HasAdFinished = true;
+                player._NativeAd.Destroy();
+                player._FrameLayout.RemoveAllViews();
+                if(player.player != null)
+                    player.Start();
+                base.OnVideoEnd();
             }
         }
 

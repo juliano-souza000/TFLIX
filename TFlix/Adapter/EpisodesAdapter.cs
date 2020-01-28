@@ -12,6 +12,8 @@ using TFlix.Activities;
 using TFlix.Interface;
 using TFlix.Services;
 using Square.Picasso;
+using PopupMenu = Android.Widget.PopupMenu;
+using Android.Views.Animations;
 
 namespace TFlix.Adapter
 {
@@ -61,6 +63,8 @@ namespace TFlix.Adapter
             public ImageView Done { get; set; }
             public ImageView Play { get; set; }
             public ImageView PauseResumeDownload { get; set; }
+            public ImageView Error { get; set; }
+            public ImageView LoadingProgress { get; set; }
             public TextView Title { get; set; }
             public TextView EPMB { get; set; }
             public CheckBox Selector { get; set; }
@@ -111,21 +115,24 @@ namespace TFlix.Adapter
                 ImageView done = row.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_dp);
                 ImageView play = row.FindViewById<ImageView>(Resource.Id.play_dpg_ep);
                 ImageView pauseResumeDownload = row.FindViewById<ImageView>(Resource.Id.pauseresume_dpg_ep_dp);
+                ImageView error = row.FindViewById<ImageView>(Resource.Id.error_dpg_ep_dp);
+                ImageView loadingProgress = row.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_loading_progressbar);
                 TextView title = row.FindViewById<TextView>(Resource.Id.title_dpg_ep);
                 TextView epmb = row.FindViewById<TextView>(Resource.Id.episodes_dpg_ep);
                 CheckBox selector = row.FindViewById<CheckBox>(Resource.Id.episodes_dpg_selector);
                 ProgressBar downloadProgress = row.FindViewById<ProgressBar>(Resource.Id.download_progressbar); 
                 ProgressBar timeWatched = row.FindViewById<ProgressBar>(Resource.Id.timewatched_progressbar);
-                RelativeLayout imageHolder = row.FindViewById<RelativeLayout>(Resource.Id.imageframe_dpg_ep);
+                RelativeLayout imageHolder = row.FindViewById<RelativeLayout>(Resource.Id.imageframe_dpg_ep); 
                 selector.Clickable = false;
 
                 row.Click += Row_Click;
                 row.LongClick += Row_LongClick;
-                //pauseResumeDownload.Click += PauseResumeDownload_Click;
-                //downloadProgress.Click += PauseResumeDownload_Click;
+                pauseResumeDownload.Click += PauseResumeDownload_Click;
+                downloadProgress.Click += PauseResumeDownload_Click;
+                error.Click += Error_Click;
 
                 image.SetScaleType(ImageView.ScaleType.CenterCrop);
-                EpisodesAdapterHolder view = new EpisodesAdapterHolder(row) { Image = image, Title = title, EPMB = epmb, Selector = selector, DownloadProgress = downloadProgress, Done = done, TimeWatched = timeWatched, Play = play, ImageHolder = imageHolder, PauseResumeDownload = pauseResumeDownload};
+                EpisodesAdapterHolder view = new EpisodesAdapterHolder(row) { Image = image, Title = title, EPMB = epmb, Selector = selector, DownloadProgress = downloadProgress, Done = done, TimeWatched = timeWatched, Play = play, ImageHolder = imageHolder, PauseResumeDownload = pauseResumeDownload, Error = error, LoadingProgress = loadingProgress};
                 return view;
             }
         }
@@ -166,9 +173,9 @@ namespace TFlix.Adapter
                     Holder.Image.LayoutParameters.Height = (int)Utils.Utils.DPToPX(context, 100);
                 }
                 Holder.Image.RequestLayout();
-                Console.WriteLine("EP: {0} Season: {1} IsDownloading: {2}", List.GetDownloads.Series[ListPos].Episodes[position].EP, List.GetDownloads.Series[ListPos].Episodes[position].ShowSeason, List.GetDownloads.Series[ListPos].Episodes[position].downloadInfo.IsDownloading);
+                Console.WriteLine("EP: {0} Season: {1} IsDownloading: {2}", List.GetDownloads.Series[ListPos].Episodes[position].EP, List.GetDownloads.Series[ListPos].Episodes[position].ShowSeason, List.GetDownloads.Series[ListPos].Episodes[position].IsDownloading);
 
-                if (List.GetDownloads.Series[ListPos].Episodes[position].downloadInfo.IsDownloading && !IsUserSelecting && !List.GetDownloads.Series[ListPos].Episodes[position].downloadInfo.IsPaused)
+                if (List.GetDownloads.Series[ListPos].Episodes[position].IsDownloading && !IsUserSelecting && !List.GetDownloads.Series[ListPos].Episodes[position].IsPaused)
                 {
                     Holder.DownloadProgress.Visibility = ViewStates.Visible;
                     Holder.DownloadProgress.Progress = List.GetDownloads.Series[ListPos].Episodes[position].Progress;
@@ -179,7 +186,7 @@ namespace TFlix.Adapter
                     Holder.DownloadProgress.Visibility = ViewStates.Gone;
                 }
 
-                if (List.GetDownloads.Series[ListPos].Episodes[position].downloadInfo.IsPaused)
+                if (List.GetDownloads.Series[ListPos].Episodes[position].IsPaused)
                 {
                     Holder.DownloadProgress.Visibility = ViewStates.Gone;
                     Holder.PauseResumeDownload.Visibility = ViewStates.Visible;
@@ -197,7 +204,7 @@ namespace TFlix.Adapter
                     Holder.Done.Visibility = ViewStates.Gone;
                 }
 
-                if(List.GetDownloads.Series[ListPos].Episodes[position].Progress == 100)
+                if (List.GetDownloads.Series[ListPos].Episodes[position].Progress == 100)
                 {
                     Holder.Play.Visibility = ViewStates.Visible;
                     Holder.DownloadProgress.Visibility = ViewStates.Gone;
@@ -205,7 +212,25 @@ namespace TFlix.Adapter
                 else
                 {
                     Holder.Play.Visibility = ViewStates.Gone;
+
+                    if (!List.GetDownloads.Series[ListPos].Episodes[position].IsDownloading && !IsUserSelecting)
+                        Holder.Error.Visibility = ViewStates.Visible;
+                    else
+                        Holder.Error.Visibility = ViewStates.Gone;
                 }
+
+                try
+                {
+                    var queueIndex = List.Queue.DownloadQueue.FindIndex(x => x.FullTitle == List.GetDownloads.Series[ListPos].Episodes[position].FullTitle);
+                    if (!List.GetDownloads.Series[ListPos].Episodes[position].IsDownloading && !IsUserSelecting && queueIndex >= 0)
+                    {
+                        Holder.LoadingProgress.SetColorFilter(Android.Graphics.Color.ParseColor("#0171F0"));
+                        Holder.LoadingProgress.SetImageDrawable(Android.Support.V4.Content.Res.ResourcesCompat.GetDrawable(context.Resources, Resource.Drawable.baseline_loading_waiting, null));
+                        Holder.Error.Visibility = ViewStates.Gone;
+                        Holder.LoadingProgress.Visibility = ViewStates.Visible;
+                    }
+                }
+                catch { }
 
                 Holder.TimeWatched.Max = (int)(List.GetDownloads.Series[ListPos].Episodes[position].Duration);
                 Holder.TimeWatched.Progress = (int)List.GetDownloads.Series[ListPos].Episodes[position].TimeWatched;
@@ -242,6 +267,52 @@ namespace TFlix.Adapter
             base.OnViewRecycled(holder);
         }
 
+
+        private void Error_Click(object sender, EventArgs e)
+        {
+            View v = (View)sender;
+            Context wrapper = new ContextThemeWrapper(context, Resource.Style.PopupMenuTheme);
+            PopupMenu popup = new PopupMenu(wrapper, v);
+            int pos = rec.GetChildAdapterPosition((View)v.Parent);
+
+            RecyclerView.ViewHolder holder = rec.FindViewHolderForAdapterPosition(pos);
+            ImageView loadingProgress = holder.ItemView.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_loading_progressbar);
+            ImageView error = holder.ItemView.FindViewById<ImageView>(Resource.Id.error_dpg_ep_dp);
+
+            popup.MenuItemClick += (s, ex) =>
+            {
+                switch (ex.Item.ItemId)
+                {
+                    case Resource.Id.download:
+                        Task.Run(() => Utils.Utils.DownloadVideo(List.GetDownloads.Series[ListPos].Episodes[pos].FullTitle, List.GetDownloads.Series[ListPos].Show, List.GetDownloads.Series[ListPos].ShowThumb, List.GetDownloads.Series[ListPos].Episodes[pos].EpThumb, List.GetDownloads.Series[ListPos].Episodes[pos].EP, List.GetDownloads.Series[ListPos].Episodes[pos].ShowSeason, context));
+
+                        RotateAnimation rotate = new RotateAnimation(0, 360, Dimension.RelativeToSelf, 0.48f, Dimension.RelativeToSelf, 0.48f);
+                        rotate.Duration = 1000;
+                        rotate.SetInterpolator(context, Resource.Animation.linear_interpolator);
+
+                        rotate.AnimationEnd += (se, eex) =>
+                        {
+                            loadingProgress.SetColorFilter(Android.Graphics.Color.ParseColor("#0171F0"));
+                            loadingProgress.SetImageDrawable(Android.Support.V4.Content.Res.ResourcesCompat.GetDrawable(context.Resources, Resource.Drawable.baseline_loading_waiting, null));
+                        };
+
+                        loadingProgress.SetColorFilter(Android.Graphics.Color.Argb(255, 255, 255, 255));
+                        error.Visibility = ViewStates.Gone;
+                        loadingProgress.Visibility = ViewStates.Visible;
+                        loadingProgress.StartAnimation(rotate);
+
+                        break;
+                    case Resource.Id.delete:
+                        Utils.Database.DeleteItem(List.GetDownloads.Series[ListPos].IsSubtitled, List.GetDownloads.Series[ListPos].Show, List.GetDownloads.Series[ListPos].Episodes[pos].EP, List.GetDownloads.Series[ListPos].Episodes[pos].ShowSeason);
+                        DetailedDownloads.ReloadDataset();
+                        break;
+                }
+                
+            };
+            popup.Inflate(Resource.Menu.error_menu);
+            popup.Show();
+        }
+
         private void PauseResumeDownload_Click(object sender, EventArgs e)
         {
             View v = (View)sender;
@@ -253,9 +324,7 @@ namespace TFlix.Adapter
                 ImageView pauseResumeDownload = holder.ItemView.FindViewById<ImageView>(Resource.Id.pauseresume_dpg_ep_dp);
                 ProgressBar downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
 
-                Intent intentPauseResume = new Intent(context, typeof(DownloadFilesService));
-
-                if (List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.IsPaused)
+                if (List.GetDownloads.Series[ListPos].Episodes[Pos].IsPaused)
                 {
                     pauseResumeDownload.Visibility = ViewStates.Gone;
                     downloadProgress.Visibility = ViewStates.Visible;
@@ -269,40 +338,14 @@ namespace TFlix.Adapter
                     pause = true;
                 }
 
-                /*Console.WriteLine("URL: {0}\n" + 
-                                  "DownloadPos: {1}\n" +
-                                  "ListPos: {2}\n" + 
-                                  "NotificationID: {5}" +
-                                  "IsFromSearch: {3}\n" +
-                                  "FullTitle: {4}\n", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.URL
-                                                    , List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.DownloadPos
-                                                    , List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.ListPos
-                                                    , List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.IsFromSearch
-                                                    , List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.FullTitle
-                                                    , List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.NotificationID);*/
+                Task.Run(() => DownloadFilesService.OnPauseDownload.IOnPauseDownload(false));
 
-                intentPauseResume.PutExtra("IsFromNotification", false);
-                intentPauseResume.PutExtra("IsRequestingPauseResume", true);
-                intentPauseResume.PutExtra("NotificationID", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.NotificationID);
-                intentPauseResume.PutExtra("PauseResume", pause);
-                intentPauseResume.PutExtra("DownloadPos", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.DownloadPos);
-                intentPauseResume.PutExtra("ListPos", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.ListPos);
-                intentPauseResume.PutExtra("IsFromSearch", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.IsFromSearch);
-
-                intentPauseResume.PutExtra("URL", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.URL);
-                intentPauseResume.PutExtra("FullTitle", List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.FullTitle);
-                intentPauseResume.PutExtra("Show", List.GetDownloads.Series[ListPos].Show);
-                intentPauseResume.PutExtra("Ep", List.GetDownloads.Series[ListPos].Episodes[Pos].EP);
-                intentPauseResume.PutExtra("ShowSeason", List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason);
-                intentPauseResume.PutExtra("IsSubtitled", List.GetDownloads.Series[ListPos].IsSubtitled);
-                intentPauseResume.PutExtra("Thumb", List.GetDownloads.Series[ListPos].Episodes[Pos].EpThumb);
-                intentPauseResume.PutExtra("ShowThumb", List.GetDownloads.Series[ListPos].ShowThumb);
-
-                context.StartService(intentPauseResume);
-
-                List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.IsPaused = !List.GetDownloads.Series[ListPos].Episodes[Pos].downloadInfo.IsPaused;
+                List.GetDownloads.Series[ListPos].Episodes[Pos].IsPaused = pause;
             }
-            catch { }
+            catch (Exception ex)
+            { 
+                Console.WriteLine("Line 328 Episodes Adapter: " + ex.Message);
+            }
         }
 
         private void Row_LongClick(object sender, View.LongClickEventArgs e)
@@ -404,22 +447,12 @@ namespace TFlix.Adapter
             long sec = timeInMillisec / 1000;
             long min = sec / 60;
 
-            if (min > 60)
+            if (min >= 60)
             {
                 return string.Format("{0} h", min/60);
             }
             else
                 return string.Format("{0} min", min);
-        }
-
-        private async Task<Bitmap> GetBitmapFromStorageAsync(string path)
-        {
-            Bitmap bmp;
-            byte[] data = File.ReadAllBytes(path);
-
-            bmp = await BitmapFactory.DecodeByteArrayAsync(data, 0, data.Length);
-
-            return bmp;
         }
     }
 

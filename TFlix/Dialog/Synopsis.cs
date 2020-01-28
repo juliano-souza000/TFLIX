@@ -12,7 +12,7 @@ using Android.Widget;
 
 namespace TFlix.Dialog
 {
-    class Synopsis : DialogFragment
+    class Synopsis : Android.Support.V4.App.DialogFragment
     {
         public string SynopsisTitleString;
         public string SynopsisContentString;

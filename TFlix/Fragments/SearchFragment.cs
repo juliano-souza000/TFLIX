@@ -18,7 +18,7 @@ using SearchView = Android.Support.V7.Widget.SearchView;
 
 namespace TFlix.Fragments
 {
-    public class SearchFragment : Fragment
+    public class SearchFragment : Android.Support.V4.App.Fragment
     {
         SearchView Search;
         RecyclerView SearchRecycler;
@@ -80,7 +80,8 @@ namespace TFlix.Fragments
         public override void OnResume()
         {
             base.OnResume();
-            Search.ClearFocus();
+            if(Internet)
+                Search.ClearFocus();
         }
 
         private void Search_QueryTextChange(object sender, SearchView.QueryTextChangeEventArgs e)
@@ -155,7 +156,7 @@ namespace TFlix.Fragments
             {
                 try
                 {
-                    List.GetSearch.Search = JsonConvert.DeserializeObject<List<List.Search>>(Utils.Utils.Download(page, e.Query));
+                    List.GetSearch.Search = JsonConvert.DeserializeObject<List<List.Search>>(Utils.Utils.Download(page, e.NewText));
                     List.GetSearch.Search.RemoveAll(x => x.Title.Contains("AO VIVO"));
                     List.GetSearch.Search.RemoveAll(x => !x.Title.Contains("Temporada"));
                     if (List.GetSearch.Search.Count == 0 || List.GetSearch.Search == null)

@@ -35,8 +35,9 @@ namespace TFlix.Adapter
         {
             public View mMain { get; set; }
             public ImageView Image { get; set; }
-            public TextView Title { get; set; }
             public ImageView Download { get; set; }
+            public TextView Title { get; set; }
+            public TextView Updated { get; set; }
 
             public SearchAdapterHolder(View view) : base(view)
             {
@@ -48,14 +49,15 @@ namespace TFlix.Adapter
         {
             View row = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.search_row, parent, false);
             ImageView image = row.FindViewById<ImageView>(Resource.Id.thumbnail_spg);
-            TextView title = row.FindViewById<TextView>(Resource.Id.title_spg);
             ImageView download = row.FindViewById<ImageView>(Resource.Id.download_spg);
+            TextView title = row.FindViewById<TextView>(Resource.Id.title_spg);
+            TextView updated = row.FindViewById<TextView>(Resource.Id.updated_spg);
 
             row.Click += Row_Click;
             download.Click += Download_Click;
 
             image.SetScaleType(ImageView.ScaleType.CenterCrop);
-            SearchAdapterHolder view = new SearchAdapterHolder(row) { Image = image, Title = title, Download = download };
+            SearchAdapterHolder view = new SearchAdapterHolder(row) { Image = image, Title = title, Download = download, Updated = updated };
             return view;
         }
 
@@ -64,15 +66,22 @@ namespace TFlix.Adapter
             SearchAdapterHolder Holder = holder as SearchAdapterHolder;
             bool isSubtitled;
 
-            Holder.Title.Text = List.GetSearch.Search[position].Title.Replace("ª Temporada Episódio ", "x").Replace("Online,", "").Replace("(SEASON FINALE)", "").Replace("LEGENDADO", "LEG").Replace("DUBLADO", "DUB").Replace("SEM LEGENDA", "S/L");
-            Picasso.With(context).Load(List.GetSearch.Search[position].ImgLink).Into(Holder.Image, new Action(async () => { await Task.Run(() => List.GetSearch.Search[position].IMG64 = Base64.EncodeToString(Utils.Utils.GetImageBytes(Holder.Image.Drawable), Base64Flags.UrlSafe)); }), new Action(() => { }));
-
             var (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(List.GetSearch.Search[position].Title.Replace("Online,", "Online "));
 
+            Holder.Title.Text = string.Format("{0} {1}x{2}", Show, Season, Ep);
+            Holder.Updated.Text = List.GetSearch.Search[position].Update;
+            Picasso.With(context).Load(List.GetSearch.Search[position].ImgLink).Into(Holder.Image, new Action(async () => { await Task.Run(() => List.GetSearch.Search[position].IMG64 = Base64.EncodeToString(Utils.Utils.GetImageBytes(Holder.Image.Drawable), Base64Flags.UrlSafe)); }), new Action(() => { }));
+
             if (List.GetSearch.Search[position].Title.Contains("LEGENDADO") || List.GetSearch.Search[position].Title.Contains("SEM LEGENDA"))
+            {
+                Holder.Title.Text += " LEG";
                 isSubtitled = true;
+            }
             else
+            {
+                Holder.Title.Text += " DUB";
                 isSubtitled = false;
+            }
 
             if (!List.GetSearch.Search[position].AlreadyChecked)
             {
@@ -91,11 +100,11 @@ namespace TFlix.Adapter
 
                 try
                 {
-                    Utils.Database.ReadDB();
+                    //Utils.Database.ReadDB();
                     var listIndex = List.GetDownloads.Series.FindIndex(x => x.Show == Show && x.IsSubtitled == isSubtitled);
                     var epIndex = List.GetDownloads.Series[listIndex].Episodes.FindIndex(x => x.ShowSeason == Season && x.EP == Ep);
 
-                    List.GetSearch.Search[position].Downloading = List.GetDownloads.Series[listIndex].Episodes[epIndex].downloadInfo.IsDownloading;
+                    List.GetSearch.Search[position].Downloading = List.GetDownloads.Series[listIndex].Episodes[epIndex].IsDownloading;
                 }
                 catch
                 {
@@ -119,8 +128,8 @@ namespace TFlix.Adapter
                 {
                     var holder = rec.FindViewHolderForAdapterPosition(Pos);
                     var dowload = holder.ItemView.FindViewById<ImageView>(Resource.Id.download_spg);
-                    
-                    Utils.Utils.DownloadVideo(true, Pos, context);
+
+                    Task.Run(() => Utils.Utils.DownloadVideo(true, Pos, context));
                     dowload.SetImageDrawable(context.GetDrawable(Resource.Drawable.baseline_cloud_download_on));
                 }
             }

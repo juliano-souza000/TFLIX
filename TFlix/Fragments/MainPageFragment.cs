@@ -20,7 +20,7 @@ using TFlix.List;
 
 namespace TFlix.Fragments
 {
-    class MainPageFragment : Fragment
+    class MainPageFragment : Android.Support.V4.App.Fragment
     {
         private RecyclerView Series;
         private ProgressBar Loading;
@@ -73,8 +73,8 @@ namespace TFlix.Fragments
 
                 Series.SetLayoutManager(new LinearLayoutManager(Application.Context));
                 Series.SetItemViewCacheSize(21);
-                Series.DrawingCacheEnabled = true;
-                Series.DrawingCacheQuality = DrawingCacheQuality.High;
+                //Series.DrawingCacheEnabled = true;
+                //Series.DrawingCacheQuality = DrawingCacheQuality.High;
 
                 Series.AddItemDecoration(new DividerItemDecoration(Series.Context, DividerItemDecoration.Vertical));
 
@@ -94,17 +94,18 @@ namespace TFlix.Fragments
 
         private void _SwipeRefreshLayout_Refresh(object sender, EventArgs e)
         {
+            bool error = false;
             page = 1;
             BackgroundWorker worker = new BackgroundWorker();
             worker.DoWork += (s, ex) =>
             {
-                GetMainPageSeries.Series = JsonConvert.DeserializeObject<List<MainPageSeries>>(Utils.Utils.Download(page));
+                try { GetMainPageSeries.Series = JsonConvert.DeserializeObject<List<MainPageSeries>>(Utils.Utils.Download(page)); } catch { error = true; }
             };
             worker.RunWorkerAsync();
 
             worker.RunWorkerCompleted += (s, ex) =>
             {
-                if (GetMainPageSeries.Series != null)
+                if (GetMainPageSeries.Series != null && !error)
                     adapter.NotifyDataSetChanged();
                 _SwipeRefreshLayout.Refreshing = false;
             };

@@ -15,8 +15,8 @@
 		android:id="@+id/download_spg"
 		android:src="@drawable/baseline_cloud_download_24"
 		android:background="?selectableItemBackgroundBorderless"
-		android:layout_width="28dp"
-		android:layout_height="28dp"
+		android:layout_width="30dp"
+		android:layout_height="30dp"
 		android:layout_marginRight="15dp"
 		android:layout_centerVertical="true"
 		android:layout_alignParentRight="true" />
@@ -26,6 +26,7 @@
 		android:layout_height="wrap_content"
 		android:layout_toRightOf="@id/thumbnail_spg"
 		android:layout_toLeftOf="@id/download_spg"
+		android:id="@+id/title_spg_layout"
 		android:layout_marginRight="15dp">
 		<TextView
 			android:text="TITLE"
@@ -35,7 +36,19 @@
 			android:layout_centerVertical="true"
 			android:textSize="7.5pt"
 			android:textColor="#fff"
-			android:singleLine="true"
 			android:layout_marginLeft="5dp"/>
 	</RelativeLayout>
+	<TextView
+		android:layout_below="@id/title_spg_layout"
+		android:id="@+id/updated_spg"
+		android:text="UPDATED"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentRight="true"
+		android:layout_marginTop="5dp"
+		android:layout_marginRight="5dp"
+		android:textSize="5.5pt"
+		android:textColor="#aaa"
+		android:singleLine="true"
+		android:textAlignment="textEnd"/>
 </RelativeLayout>

@@ -43,6 +43,7 @@ namespace TFlix.Utils
             public long TotalBytesEP { get; set; }
             public string Path { get; set; }
             public long Duration { get; set; }
+            public string FullTitle { get; set; }
         }
 
         public static void CreateDB()
@@ -56,7 +57,7 @@ namespace TFlix.Utils
             db = null;
         }
 
-        public static void InsertData(string epthumb, string show, string showThumb, int showSeason, int ep, long bytes, long totalBytesEp, bool isSubtitled, string path, long duration)
+        public static void InsertData(string epthumb, string show, string showThumb, int showSeason, int ep, long bytes, long totalBytesEp, bool isSubtitled, string path, long duration, string fullTitle)
         {
             var db = new SQLiteConnection(DatabaseFile);
 
@@ -86,7 +87,8 @@ namespace TFlix.Utils
                     ShowSeason = showSeason,
                     TotalBytesEP = totalBytesEp,
                     Path = path,
-                    Duration = duration
+                    Duration = duration,
+                    FullTitle = fullTitle
                 };
 
                 db.Insert(Eps);
@@ -101,9 +103,11 @@ namespace TFlix.Utils
 
         public static void DeleteItems()
         {
-            foreach (var it in List.GetDownloads.Series.ToList())
+            var dict = List.GetDownloads.Series.ToDictionary(x => x);
+            foreach (var it in dict.Values.ToList())
             {
-                foreach (var item in it.Episodes.Where(row => row.IsSelected == true))
+                var dictIt = it.Episodes.ToDictionary(x => x);
+                foreach (var item in dictIt.Values.Where(row => row.IsSelected == true).ToList())
                 {
                     DeleteItem(it.IsSubtitled, it.Show, item.EP, item.ShowSeason);
                 }
@@ -115,6 +119,8 @@ namespace TFlix.Utils
         {
             var db = new SQLiteConnection(DatabaseFile);
             var table = db.Table<Episodes>();
+
+            var listPos = List.GetDownloads.Series.FindIndex(x => x.IsSubtitled == isSubtitled && x.Show == show);
 
             try
             {
@@ -128,10 +134,22 @@ namespace TFlix.Utils
                 var showID = db.Table<Shows>().Where(row => row.Show == show && row.IsSubtitled == isSubtitled).Select(row => row.ShowID).First();
                 table.Where(row => row.EP == ep && row.ShowSeason == season && row.ShowID == showID).Delete();
 
+                var epIndex = List.GetDownloads.Series[listPos].Episodes.FindIndex(x => x.EP == ep && x.ShowSeason == season && x.ShowID == showID);
+                List.GetDownloads.Series[listPos].Episodes.RemoveAt(epIndex);
+
                 if (table.Where(row => row.ShowID == showID).Count() == 0)
                 {
                     db.Execute("DELETE FROM Shows WHERE ShowID = " + showID);
+                    List.GetDownloads.Series.RemoveAt(listPos);
                 }
+            }
+            catch { }
+
+            try
+            {
+                var countOfItemsWithPosSeason = List.GetDownloads.Series[listPos].Episodes.FindAll(delegate (List.Downloads dl) { return dl.ShowSeason == season; }).Count;
+                if (countOfItemsWithPosSeason == 1)
+                    DeleteItem(isSubtitled, show, 0, season);
             }
             catch { }
 
@@ -194,19 +212,24 @@ namespace TFlix.Utils
             var table = db.Table<Episodes>();
             bool isItemDownloaded = false;
 
-            var x = db.Table<Shows>().Where(row => row.Show == show && row.IsSubtitled == isSubtitled).Select(row => row.ShowID);
-
-            if (x.Count() != 0)
+            try
             {
-                try
+                var x = db.Table<Shows>().Where(row => row.Show == show && row.IsSubtitled == isSubtitled).Select(row => row.ShowID);
+
+                if (x.Count() != 0)
                 {
-                    var showID = db.Table<Shows>().Where(row => row.Show == show && row.IsSubtitled == isSubtitled).Select(row => row.ShowID).First();
-                    var progress = table.Where(row => row.EP == ep && row.ShowSeason == season && row.ShowID == showID).Select(row => row.Progress).First();
-                    if (progress == 100)
-                        isItemDownloaded = true;
+                    try
+                    {
+                        var showID = db.Table<Shows>().Where(row => row.Show == show && row.IsSubtitled == isSubtitled).Select(row => row.ShowID).First();
+                        var progress = table.Where(row => row.EP == ep && row.ShowSeason == season && row.ShowID == showID).Select(row => row.Progress).First();
+                        if (progress == 100)
+                            isItemDownloaded = true;
+                    }
+                    catch { }
                 }
-                catch { }
             }
+            catch { }
+
             db.Dispose();
             db.Close();
             db = null;
@@ -239,7 +262,7 @@ namespace TFlix.Utils
             return 0;
         }
 
-        public static long GetTotalBytes(bool isSubtitled, string show, int ep, int season)
+        public static long GetTotalDownloadedBytes(bool isSubtitled, string show, int ep, int season)
         {
             var db = new SQLiteConnection(DatabaseFile);
             var table = db.Table<Episodes>();
@@ -311,23 +334,31 @@ namespace TFlix.Utils
                         EpThumb = row2.EpThumbPath,
                         Duration = row2.Duration,
                         TimeWatched = Bookmark.GetBookmarkInMillisecond(Item.Show, row2.EP, row2.ShowSeason, Item.IsSubtitled),
-                        downloadInfo = new List.DownloadInfo()
+                        FullTitle = row2.FullTitle
                     }).Where(row => row.ShowID == showID).OrderBy(x => x.ShowSeason).ThenBy(x => x.EP).ToList();
-                    List.GetDownloads.Series.Add(Item);
+
+                    if (List.GetDownloads.Series.FindAll(x => x.ShowID == showID).Count != 0)
+                    {
+                        for (int i = 0; i < List.GetDownloads.Series.Count; i++)
+                        {
+                            foreach (var ep in Item.Episodes)
+                            {
+                                var counts = List.GetDownloads.Series[i].Episodes.FindAll(x => x.EP == ep.EP && x.ShowSeason == ep.ShowSeason).Count;
+                                if (counts == 0 && List.GetDownloads.Series[i].Episodes.FindAll(x => x.ShowID == showID).Count != 0)
+                                    List.GetDownloads.Series[i].Episodes.Add(ep);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        List.GetDownloads.Series.Add(Item);
+                    }
                 }
 
-                for (int i = 0; i < List.GetDownloads.Series.Count; i++)
+                for(int i = 0;i < List.GetDownloads.Series.Count; i++)
                 {
-                    List.GetDownloads.Series[i].Episodes = List.GetDownloads.Series[i].Episodes.DistinctBy(x => new { x.ShowID, x.ShowSeason, x.EP }).ToList();
+                    List.GetDownloads.Series[i].Episodes = List.GetDownloads.Series[i].Episodes.OrderBy(x => x.ShowSeason).ThenBy(x => x.EP).ToList();
                 }
-
-                List.GetDownloads.Series = List.GetDownloads.Series.DistinctBy(x => x.ShowID).ToList();
-
-                try
-                {
-                    Activities.DetailedDownloads.ReloadDataset();
-                }
-                catch { }
 
                 db.Dispose();
                 db.Close();

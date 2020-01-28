@@ -21,6 +21,7 @@ namespace TFlix.Activities
     {
         private static RecyclerView Episodes;
         private static EpisodesAdapter adapter;
+        private static Activity activity;
         private Toolbar toolbar;
 
         private static int Pos;
@@ -30,6 +31,8 @@ namespace TFlix.Activities
         {
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.downloaded_episodes);
+
+            activity = this;
 
             toolbar = FindViewById<Toolbar>(Resource.Id.downloaded_episodes_toolbar);
             Episodes = (RecyclerView)FindViewById(Resource.Id.downloaded_episodes);
@@ -93,14 +96,11 @@ namespace TFlix.Activities
 
                 case Resource.Id.delete_appbar:
                     Utils.Database.DeleteItems();
-
                     try
                     {
                         if (List.GetDownloads.Series[Pos].Episodes == null || List.GetDownloads.Series[Pos].Episodes.Count == 0)
                         {
-                            //adapter.IsUserSelecting = false;
                             IsSelecting = false;
-
                             Finish();
                         }
                         else
@@ -123,31 +123,48 @@ namespace TFlix.Activities
         {
             try
             {
-                if(List.GetDownloads.Series[Pos].Episodes != null || List.GetDownloads.Series[Pos].Episodes.Count != 0)
-                adapter.NotifyDataSetChanged();
+                if (List.GetDownloads.Series[Pos].Episodes != null || List.GetDownloads.Series[Pos].Episodes.Count != 0)
+                    adapter.NotifyDataSetChanged();
+                else
+                    activity.Finish();
             }
             catch { }
         }
 
-        private void Download_ChangedStatus(object sender, StatusEventArgs e)
+        private void Download_ChangedStatus(object sender, ProgressEventArgs e)
         {
             if (!IsSelecting)
             {
                 try
                 {
-                    var (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(e.FullTitle);
-                    var ShowID = List.GetDownloads.Series.Where(x => x.Show == Show).Select(x => x.ShowID).FirstOrDefault();
-                    var epIndex = List.GetDownloads.Series[Pos].Episodes.FindIndex(x => x.EP == Ep && x.ShowSeason == Season && x.ShowID == ShowID);
+                    var epIndex = List.GetDownloads.Series[Pos].Episodes.FindIndex(x => x.EP == e.EP && x.ShowSeason == e.ShowSeason && x.ShowID == e.ShowID);
 
                     var holder = Episodes.FindViewHolderForAdapterPosition(epIndex);
+                    Console.WriteLine(holder.AdapterPosition);
                     var downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
+                    var error = holder.ItemView.FindViewById<ImageView>(Resource.Id.error_dpg_ep_dp);
+                    var waiting = holder.ItemView.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_loading_progressbar);
 
-                    if(List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsDownloading)
-                        downloadProgress.Visibility = ViewStates.Visible;
-                    else
-                        downloadProgress.Visibility = ViewStates.Gone;
+                    RunOnUiThread(() =>
+                    {
+                        if (List.GetDownloads.Series[Pos].Episodes[epIndex].IsDownloading)
+                        {
+                            downloadProgress.Visibility = ViewStates.Visible;
+                            error.Visibility = ViewStates.Gone;
+                            waiting.Visibility = ViewStates.Gone;
+                        }
+                        else
+                        {
+                            downloadProgress.Visibility = ViewStates.Gone;
+                            error.Visibility = ViewStates.Visible;
+                        }
+                    });
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.StackTrace);
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
 
@@ -162,20 +179,37 @@ namespace TFlix.Activities
                     var holder = Episodes.FindViewHolderForAdapterPosition(epIndex);
                     var downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
                     var pauseResumeDownload = holder.ItemView.FindViewById<ImageView>(Resource.Id.pauseresume_dpg_ep_dp);
+                    var error = holder.ItemView.FindViewById<ImageView>(Resource.Id.error_dpg_ep_dp);
 
-                    downloadProgress.Visibility = ViewStates.Gone;
-                    pauseResumeDownload.Visibility = ViewStates.Visible;
-                    List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsPaused = !List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsPaused;
+                    RunOnUiThread(() =>
+                    {
+                        error.Visibility = ViewStates.Gone;
+                        if (List.GetDownloads.Series[Pos].Episodes[epIndex].IsPaused)
+                        {
+                            downloadProgress.Visibility = ViewStates.Gone;
+                            pauseResumeDownload.Visibility = ViewStates.Visible;
+                        }
+                        else
+                        {
+                            downloadProgress.Visibility = ViewStates.Visible;
+                            pauseResumeDownload.Visibility = ViewStates.Gone;
+                        }
+                    });
+                    //List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsPaused = !List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsPaused;
                     //adapter.NotifyItemChanged(epIndex);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.StackTrace);
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
 
         private void Progress_Completed(object sender, ProgressEventArgs e)
         {
             var epIndex = List.GetDownloads.Series[Pos].Episodes.FindIndex(x => x.EP == e.EP && x.ShowSeason == e.ShowSeason && x.ShowID == e.ShowID);
-            if (!List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsPaused && !IsSelecting)
+            if (!List.GetDownloads.Series[Pos].Episodes[epIndex].IsPaused && !IsSelecting)
             {
                 try
                 {
@@ -183,11 +217,18 @@ namespace TFlix.Activities
                     var downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
                     var downloaded = holder.ItemView.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_dp);
 
-                    downloadProgress.Visibility = ViewStates.Gone;
-                    downloaded.Visibility = ViewStates.Visible;
+                    RunOnUiThread(() =>
+                    {
+                        downloadProgress.Visibility = ViewStates.Gone;
+                        downloaded.Visibility = ViewStates.Visible;
+                    });
                     adapter.NotifyItemChanged(epIndex);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.StackTrace);
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
 
@@ -195,19 +236,31 @@ namespace TFlix.Activities
         {
             var epIndex = List.GetDownloads.Series[Pos].Episodes.FindIndex(x => x.EP == e.EP && x.ShowSeason == e.ShowSeason && x.ShowID == e.ShowID);
             //Console.WriteLine(IsSelecting);
-            if (!List.GetDownloads.Series[Pos].Episodes[epIndex].downloadInfo.IsPaused && !IsSelecting)
+            if (!List.GetDownloads.Series[Pos].Episodes[epIndex].IsPaused && !IsSelecting)
             {
                 try
                 {
                     var holder = Episodes.FindViewHolderForAdapterPosition(epIndex);
+
+                    holder = Episodes.FindViewHolderForAdapterPosition(epIndex);
+
                     var downloadProgress = holder.ItemView.FindViewById<ProgressBar>(Resource.Id.download_progressbar);
                     var downloaded = holder.ItemView.FindViewById<ImageView>(Resource.Id.episodes_dpg_ep_dp);
+                    var error = holder.ItemView.FindViewById<ImageView>(Resource.Id.error_dpg_ep_dp);
 
-                    if (downloadProgress.Visibility != ViewStates.Visible)
-                        downloadProgress.Visibility = ViewStates.Visible;
+                    RunOnUiThread(() =>
+                    {
+                        if (downloadProgress.Visibility != ViewStates.Visible)
+                            downloadProgress.Visibility = ViewStates.Visible;
+                        error.Visibility = ViewStates.Gone;
+                    });
                     downloadProgress.Progress = List.GetDownloads.Series[Pos].Episodes[epIndex].Progress;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.StackTrace);
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
 

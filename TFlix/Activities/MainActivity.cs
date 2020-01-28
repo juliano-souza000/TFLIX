@@ -13,13 +13,13 @@ using Android.Views;
 using System.ComponentModel;
 using Android.Views.Animations;
 using Xamarin.Essentials;
+using Android.Gms.Ads;
 
 namespace TFlix
 {
-    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true, ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, LaunchMode = Android.Content.PM.LaunchMode.SingleInstance, WindowSoftInputMode = SoftInput.StateHidden | SoftInput.AdjustPan, ConfigurationChanges = Android.Content.PM.ConfigChanges.KeyboardHidden | Android.Content.PM.ConfigChanges.Orientation | Android.Content.PM.ConfigChanges.ScreenSize)]
+    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, LaunchMode = Android.Content.PM.LaunchMode.SingleInstance, WindowSoftInputMode = SoftInput.StateHidden | SoftInput.AdjustPan, ConfigurationChanges = Android.Content.PM.ConfigChanges.KeyboardHidden | Android.Content.PM.ConfigChanges.Orientation | Android.Content.PM.ConfigChanges.ScreenSize)]
     public class MainActivity : AppCompatActivity, BottomNavigationView.IOnNavigationItemSelectedListener, BottomNavigationView.IOnNavigationItemReselectedListener
     {
-
         private const int NAV_MAIN = 0;
         private const int NAV_SEARCH = 1;
         private const int NAV_DOWNLOADS = 2;
@@ -29,8 +29,8 @@ namespace TFlix
         private FrameLayout Frame;
         private BottomNavigationView _Toolbar;
 
-        private FragmentManager fragmentManager;
-        private FragmentTransaction fragmentTransaction;
+        private Android.Support.V4.App.FragmentManager fragmentManager;
+        private Android.Support.V4.App.FragmentTransaction fragmentTransaction;
 
         private int FramePos = 0;
         private int PrevFramePos = -1;
@@ -67,6 +67,7 @@ namespace TFlix
             {
                 Utils.Database.CreateDB();
                 Utils.Bookmark.CreateDB();
+                MobileAds.Initialize(ApplicationContext, GetString(Resource.String.ad_app_id));
             }
 
             Frame = (FrameLayout)FindViewById(Resource.Id.main_frame);
@@ -84,7 +85,6 @@ namespace TFlix
                 ConnHandle();
 
             Connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
-
         }
 
         protected override void OnSaveInstanceState(Bundle outState)
@@ -106,13 +106,11 @@ namespace TFlix
             ChangeFrame();
         }
 
-        private void Connectivity_ConnectivityChanged(object sender, ConnectivityChangedEventArgs e) { ConnHandle(); }
+        private void Connectivity_ConnectivityChanged(object sender, ConnectivityChangedEventArgs e) { PrevFramePos = -1;  ConnHandle(); }
 
         private void ConnHandle()
         {
             current = Connectivity.NetworkAccess;
-            if (current == NetworkAccess.Internet)
-                PrevFramePos = -1;
             ChangeFrame();
         }
 
@@ -120,7 +118,7 @@ namespace TFlix
         {
             if (RequestedOrientation == Android.Content.PM.ScreenOrientation.Portrait && (PrevFramePos != FramePos))
             {
-                fragmentManager = FragmentManager;
+                fragmentManager = SupportFragmentManager;
                 fragmentTransaction = fragmentManager.BeginTransaction();
                 var x = Frame.ChildCount;
                 //Console.WriteLine(fragmentManager.IsDestroyed);
@@ -141,7 +139,7 @@ namespace TFlix
                         break;
                 }
                 fragmentTransaction.AddToBackStack(null);
-                fragmentTransaction.Commit();
+                fragmentTransaction.CommitAllowingStateLoss();
                 PrevFramePos = FramePos;
             }
 

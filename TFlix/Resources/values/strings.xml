@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">TFlix</string>
     <string name="action_settings">Settings</string>
+    <string name="ad_unit_id">ca-app-pub-3292674199284422/4976819650</string>
+    <string name="ad_unit_video_id">ca-app-pub-3292674199284422/9566338333</string>
+    <string name="ad_app_id">ca-app-pub-3292674199284422~4697424539</string>
 </resources>

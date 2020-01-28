@@ -44,7 +44,7 @@ namespace TFlix.Utils
             var Show = fullTitle.Substring(0, fullTitle.IndexOf('ª'));
             var ShowSeason = int.Parse(Show.Substring(Show.LastIndexOf(' ')));
             Show = Show.Substring(0, Show.LastIndexOf(' '));
-            var Ep  = fullTitle.Substring(fullTitle.LastIndexOf("Episódio"));
+            var Ep = fullTitle.Substring(fullTitle.LastIndexOf("Episódio"));
             Ep = Ep.Substring(0, Ep.LastIndexOf("Online")).Replace("Episódio", "");
 
             return (Show, ShowSeason, int.Parse(Ep));
@@ -150,6 +150,40 @@ namespace TFlix.Utils
             return availableBlocks * blockSize;
         }
 
+        public static void StartNextOnQueue(Context context)
+        {
+            try
+            {
+                Queue.DownloadQueue.RemoveAt(0);
+                if (Queue.DownloadQueue.Count > 0)
+                {
+                    Intent downloader = new Intent(context, typeof(DownloadFilesService));
+                    downloader.PutExtra("IsFromQueue", true);
+                    downloader.PutExtra("FullTitle", Queue.DownloadQueue[0].FullTitle);
+                    downloader.PutExtra("Thumb", Queue.DownloadQueue[0].ShowThumb);
+                    downloader.PutExtra("Show", Queue.DownloadQueue[0].Show);
+                    downloader.PutExtra("ShowThumb", Queue.DownloadQueue[0].ShowThumb);
+                    downloader.PutExtra("ShowSeason", Queue.DownloadQueue[0].ShowSeason);
+                    downloader.PutExtra("Ep", Queue.DownloadQueue[0].Ep);
+                    downloader.PutExtra("DownloadURL", Queue.DownloadQueue[0].URL);
+                    //downloader.PutExtra("DownloadEPDuration", player.Duration);
+
+                    if (serviceConnection == null)
+                    {
+                        Intent serviceBinder = new Intent(context, typeof(DownloadFilesService));
+                        serviceConnection = new DownloadFileServiceConnection();
+                        context.ApplicationContext.BindService(serviceBinder, serviceConnection, Bind.AutoCreate);
+                    }
+
+                    ((Application)context).StartService(downloader);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("{0} {1}", e.Message, e.StackTrace);
+            }
+        }
+
         public static string GetSynopsis(string url)
         {
             string synopsis;
@@ -163,10 +197,116 @@ namespace TFlix.Utils
             return synopsis;
         }
 
+        public static async void DownloadVideo(string FullTitle, string Show, string ShowThumb, string EpThumb, int Ep, int ShowSeason, Context context)
+        {
+            string Url;
+            byte[] Data;
+
+            bool IsSubtitled;
+            long duration = 0;
+            long bytes_total = 0;
+
+            WebClient request = new WebClient();
+
+            Url = VideoPageUrl(FullTitle);
+
+            Data = request.DownloadData(Url);
+            var response = Encoding.UTF8.GetString(Data);
+
+            var thumbBytes = await GetThumbnailBytes(response);
+            var VideoPlayerDataString = await GetVideoAsync(response, context);
+
+            if (Queue.DownloadQueue == null)
+                Queue.DownloadQueue = new List<QueueList>();
+
+            try
+            {
+                System.IO.File.WriteAllBytes(EpThumb, thumbBytes);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+            if (FullTitle.ToLower().Contains("legendado"))
+                IsSubtitled = true;
+            else
+                IsSubtitled = false;
+
+            WebClient header = new WebClient();
+
+            try
+            {
+                header.OpenRead(VideoPlayerDataString);
+                bytes_total = long.Parse(header.ResponseHeaders["Content-Length"]);
+            }
+            catch { }
+
+            try
+            {
+                Android.Media.MediaMetadataRetriever reader = new Android.Media.MediaMetadataRetriever();
+
+                reader.SetDataSource(VideoPlayerDataString, new Dictionary<string, string>());
+                duration = long.Parse(reader.ExtractMetadata(Android.Media.MetadataKey.Duration));
+
+                reader.Release();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+            }
+
+            //Database.InsertData(Thumb, Show, ShowThumb, ShowSeason, Ep, 0, bytes_total, IsSubtitled, System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Series", FullTitle), duration, FullTitle);
+            Queue.DownloadQueue.Add(new QueueList { URL = VideoPlayerDataString, FullTitle = FullTitle, EpThumb = ShowThumb, ShowThumb = ShowThumb, Duration = duration, IsSubtitled = IsSubtitled, Ep = Ep, Show = Show, ShowSeason = ShowSeason });
+
+            if (Queue.DownloadQueue.Count == 1)
+            {
+                Intent downloader = new Intent(context, typeof(DownloadFilesService));
+                downloader.PutExtra("DownloadURL", VideoPlayerDataString);
+                downloader.PutExtra("FullTitle", FullTitle);
+                downloader.PutExtra("Thumb", EpThumb.Replace("Online,", "Online "));
+                downloader.PutExtra("Show", Show);
+                downloader.PutExtra("ShowThumb", ShowThumb);
+                downloader.PutExtra("ShowSeason", ShowSeason);
+                downloader.PutExtra("Ep", Ep);
+                //downloader.PutExtra("DownloadEPDuration", player.Duration);
+
+                if (serviceConnection == null)
+                {
+                    Intent serviceBinder = new Intent(context, typeof(DownloadFilesService));
+                    serviceConnection = new DownloadFileServiceConnection();
+                    context.ApplicationContext.BindService(serviceBinder, serviceConnection, Bind.AutoCreate);
+                }
+
+                ((Activity)context).Application.StartService(downloader);
+            }
+
+            foreach (var item in List.Queue.DownloadQueue)
+            {
+                Console.WriteLine("Show: {0}" +
+                                  "Season: {1}" +
+                                  "EP: {2}" +
+                                  "IsSub: {3}", item.Show, item.ShowSeason, item.Ep, item.IsSubtitled);
+            }
+
+        }
+
         public static async void DownloadVideo(bool IsFromSearch, int Pos, Context context)
         {
             string Url;
             byte[] Data;
+
+            string FullTitle = "";
+            string ShowThumb = "";
+            string Thumb = "";
+            string Show = "";
+            int ShowSeason = 0;
+            int Ep = 0;
+
+            bool IsSubtitled;
+            long duration = 0;
+            long bytes_total = 0;
+
 
             WebClient request = new WebClient();
 
@@ -180,7 +320,7 @@ namespace TFlix.Utils
             Data = request.DownloadData(Url);
             var response = Encoding.UTF8.GetString(Data);
 
-            var thumbDrawable = await GetThumbnailDrawable(context, response);
+            var thumbBytes = await GetThumbnailBytes(response);
             var VideoPlayerDataString = await GetVideoAsync(response, context);
 
             try
@@ -188,15 +328,59 @@ namespace TFlix.Utils
                 if (!System.IO.Directory.Exists(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail"))
                     System.IO.Directory.CreateDirectory(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail");
 
+                if (!System.IO.Directory.Exists(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/ShowThumbnail"))
+                    System.IO.Directory.CreateDirectory(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/ShowThumbnail");
+
                 if (!IsFromSearch)
                 {
-                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetMainPageSeries.Series[Pos].Title), GetImageBytes(thumbDrawable));
-                    List.GetMainPageSeries.Series[Pos].EPThumb = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title);
+                    (Show, ShowSeason, Ep) = BreakFullTitleInParts(List.GetMainPageSeries.Series[Pos].Title);
+
+                    try
+                    {
+                        List.GetMainPageSeries.Series[Pos].EPThumb = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetMainPageSeries.Series[Pos].Title);
+                        System.IO.File.WriteAllBytes(List.GetMainPageSeries.Series[Pos].EPThumb, thumbBytes);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message);
+                    }
+
+                    var thumbpath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/ShowThumbnail", Show);
+                    try
+                    {
+                        if (!System.IO.File.Exists(thumbpath))
+                            System.IO.File.WriteAllBytes(thumbpath, Base64.Decode(List.GetMainPageSeries.Series[Pos].IMG64, Base64Flags.UrlSafe));
+                    }
+                    catch { }
+
+                    FullTitle = List.GetMainPageSeries.Series[Pos].Title;
+                    Thumb = List.GetMainPageSeries.Series[Pos].EPThumb;
+
+                    List.GetMainPageSeries.Series[Pos].Downloading = true;
+
+                    ShowThumb = thumbpath;
                 }
                 else
                 {
-                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title), GetImageBytes(thumbDrawable));
-                    List.GetSearch.Search[Pos].EPThumb = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title);
+                    (Show, ShowSeason, Ep) = BreakFullTitleInParts(GetSearch.Search[Pos].Title);
+
+                    try
+                    {
+                        List.GetSearch.Search[Pos].EPThumb = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title);
+                        System.IO.File.WriteAllBytes(List.GetSearch.Search[Pos].EPThumb, thumbBytes);
+                    }
+                    catch { }
+
+                    var thumbpath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/ShowThumbnail", Show);
+                    if (!System.IO.File.Exists(thumbpath))
+                        System.IO.File.WriteAllBytes(thumbpath, Base64.Decode(List.GetSearch.Search[Pos].IMG64, Base64Flags.UrlSafe));
+
+                    FullTitle = GetSearch.Search[Pos].Title.Replace("Online,", "Online ");
+                    Thumb = GetSearch.Search[Pos].EPThumb;
+                    GetSearch.Search[Pos].Downloading = true;
+
+                    ShowThumb = thumbpath;
+
                 }
             }
             catch { }
@@ -204,26 +388,70 @@ namespace TFlix.Utils
             //if (context.CheckSelfPermission(Android.Manifest.Permission.ReadExternalStorage) == Android.Content.PM.Permission.Granted
             //    && context.CheckSelfPermission(Android.Manifest.Permission.WriteExternalStorage) == Android.Content.PM.Permission.Granted)
             //{
-                if (!System.IO.Directory.Exists(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles"))
-                    System.IO.Directory.CreateDirectory(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles");
+            if (!System.IO.Directory.Exists(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles"))
+                System.IO.Directory.CreateDirectory(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles");
 
-                try
+            try
+            {
+                if (!IsFromSearch)
                 {
-                    if (!IsFromSearch)
-                    {
-                        System.IO.File.WriteAllText(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", List.GetMainPageSeries.Series[Pos].Title + ".srt"), System.IO.File.ReadAllText(filePath));
-                    }
-                    else
-                    {
-                        System.IO.File.WriteAllText(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", List.GetSearch.Search[Pos].Title.Replace("Online,", "Online ") + ".srt"), System.IO.File.ReadAllText(filePath));
-                    }
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", List.GetMainPageSeries.Series[Pos].Title + ".srt"), System.IO.File.ReadAllText(filePath));
                 }
-                catch { }
+                else
+                {
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", List.GetSearch.Search[Pos].Title.Replace("Online,", "Online ") + ".srt"), System.IO.File.ReadAllText(filePath));
+                }
+            }
+            catch { }
+
+            if (Queue.DownloadQueue == null)
+                Queue.DownloadQueue = new List<QueueList>();
+
+            if (FullTitle.ToLower().Contains("legendado"))
+                IsSubtitled = true;
+            else
+                IsSubtitled = false;
+
+            WebClient header = new WebClient();
+
+            try
+            {
+                header.OpenRead(VideoPlayerDataString);
+                bytes_total = long.Parse(header.ResponseHeaders["Content-Length"]);
+            }
+            catch { }
+
+            try
+            {
+                Android.Media.MediaMetadataRetriever reader = new Android.Media.MediaMetadataRetriever();
+
+                reader.SetDataSource(VideoPlayerDataString, new Dictionary<string, string>());
+                duration = long.Parse(reader.ExtractMetadata(Android.Media.MetadataKey.Duration));
+
+                reader.Release();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+            }
+
+            if (!Database.IsSeasonOnDB(ShowSeason, Show, IsSubtitled))
+                Database.InsertData("", Show, ShowThumb, ShowSeason, 0, 0, 0, IsSubtitled, "", 0, "");
+            Database.InsertData(Thumb, Show, ShowThumb, ShowSeason, Ep, 0, bytes_total, IsSubtitled, System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Series", FullTitle), duration, FullTitle);
+            Queue.DownloadQueue.Add(new QueueList { URL = VideoPlayerDataString, FullTitle = FullTitle, EpThumb = Thumb, ShowThumb = ShowThumb, Duration = duration, IsSubtitled = IsSubtitled, Ep = Ep, Show = Show, ShowSeason = ShowSeason });
+
+
+            if (Queue.DownloadQueue.Count == 1)
+            {
 
                 Intent downloader = new Intent(context, typeof(DownloadFilesService));
                 downloader.PutExtra("DownloadURL", VideoPlayerDataString);
-                downloader.PutExtra("DownloadSHOWID", Pos);
-                downloader.PutExtra("IsFromSearch", IsFromSearch);
+                downloader.PutExtra("FullTitle", FullTitle);
+                downloader.PutExtra("Thumb", Thumb.Replace("Online,", "Online "));
+                downloader.PutExtra("Show", Show);
+                downloader.PutExtra("ShowThumb", ShowThumb);
+                downloader.PutExtra("ShowSeason", ShowSeason);
+                downloader.PutExtra("Ep", Ep);
                 //downloader.PutExtra("DownloadEPDuration", player.Duration);
 
                 if (serviceConnection == null)
@@ -234,6 +462,15 @@ namespace TFlix.Utils
                 }
 
                 ((Activity)context).Application.StartService(downloader);
+            }
+            
+            foreach (var item in List.Queue.DownloadQueue)
+            {
+                Console.WriteLine("Show: {0}" +
+                                  "Season: {1}" +
+                                  "EP: {2}" +
+                                  "IsSub: {3}", item.Show, item.ShowSeason, item.Ep, item.IsSubtitled);
+            }
             //}
             //else
             //{
@@ -294,9 +531,9 @@ namespace TFlix.Utils
             return length;
         }
 
-        private static async Task<Drawable> GetThumbnailDrawable(Context context, string response)
+        private static async Task<byte[]> GetThumbnailBytes(string response)
         {
-            Drawable d = null;
+            byte[] imageBytes = null;
             try
             {
                 string ImgURL = "";
@@ -311,11 +548,14 @@ namespace TFlix.Utils
                     ImgURL = ImgURL.Substring(0, ImgURL.IndexOf("&prott"));
                 }
                 catch { }
-                var imageBitmap = await GetImageBitmapFromUrl(ImgURL);
-                d = new BitmapDrawable(context.Resources, imageBitmap);
+                using (var webClient = new WebClient())
+                {
+                    imageBytes = await webClient.DownloadDataTaskAsync(ImgURL);
+                    var idk = Encoding.UTF8.GetString(imageBytes);
+                }
             }
             catch { }
-            return d;
+            return imageBytes;
         }
 
         public static string VideoPageUrl(string title)
@@ -339,13 +579,17 @@ namespace TFlix.Utils
             title = Regex.Replace(title, "[ìíîï]", "i");
             title = Regex.Replace(title, "[ÌÍÎÏ]", "I");
             title = Regex.Replace(title, @"\s+", " ");
+            title = title.Replace("–","-");
             title = title.Replace(",", "");
+            title = title.Replace(".", "-");
+            title = title.Replace(":", "-");
             title = title.Replace(" (SEASON FINALE)", "");
             title = title.Replace("ª", "a");
             title = title.Replace("º", "o");
             title = title.Replace("- ", "");
             title = title.Replace(" ", "-");
             title = title.Replace("SEM-LEGENDA", "legendado");
+            title = Regex.Replace(title, @"-+", "-");
             return "https://seuseriado.com/" + title.ToLower();
         }
 
