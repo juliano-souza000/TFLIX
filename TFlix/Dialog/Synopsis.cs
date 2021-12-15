@@ -41,6 +41,7 @@ namespace TFlix.Dialog
             if (!SynopsisContentString.StartsWith(" "))
                 SynopsisContentString = SynopsisContentString.Insert(0, " ");
 
+
             var (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(SynopsisTitleString);
 
             SynopsisTitle.Text =  Show;

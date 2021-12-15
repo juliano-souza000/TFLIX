@@ -146,9 +146,9 @@ namespace TFlix.Adapter
             Holder.Title.Text = Regex.Replace(List.GetDownloads.Series[position].Show, @"\b([a-z])", m => m.Value.ToUpper());
 
             if (List.GetDownloads.Series[position].Episodes.Where(row => row.Duration > 0).Count() == 1)
-                Holder.EPMB.Text = string.Format("{0} Episódio | {1}", List.GetDownloads.Series[position].Episodes.Where(row => row.EP != 0).Count(), Utils.Utils.Size(List.GetDownloads.Series[position].TotalBytes));
+                Holder.EPMB.Text = string.Format("{0} Episódio | {1}", List.GetDownloads.Series[position].Episodes.Where(row => row.EP >= 0).Count(), Utils.Utils.Size(List.GetDownloads.Series[position].TotalBytes));
             else
-                Holder.EPMB.Text = string.Format("{0} Episódios | {1}", List.GetDownloads.Series[position].Episodes.Where(row => row.EP != 0).Count(), Utils.Utils.Size(List.GetDownloads.Series[position].TotalBytes));
+                Holder.EPMB.Text = string.Format("{0} Episódios | {1}", List.GetDownloads.Series[position].Episodes.Where(row => row.EP >= 0).Count(), Utils.Utils.Size(List.GetDownloads.Series[position].TotalBytes));
 
         }
 

@@ -14,6 +14,7 @@ using System.ComponentModel;
 using Android.Views.Animations;
 using Xamarin.Essentials;
 using Android.Gms.Ads;
+using Android.Graphics;
 
 namespace TFlix
 {
@@ -75,6 +76,7 @@ namespace TFlix
 
             _Toolbar.SetOnNavigationItemSelectedListener(this);
             _Toolbar.SetOnNavigationItemReselectedListener(this);
+            _Toolbar.SetBackgroundResource(Resource.Color.appBarColorStart);
 
             if (savedInstanceState == null)
                 _Toolbar.SelectedItemId = Resource.Id.nav_main;
@@ -85,6 +87,13 @@ namespace TFlix
                 ConnHandle();
 
             Connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
+        }
+
+        protected override void OnResume()
+        {
+            this.RequestedOrientation = Android.Content.PM.ScreenOrientation.Portrait;
+            Utils.Database.ReadDB();
+            base.OnResume();
         }
 
         protected override void OnSaveInstanceState(Bundle outState)
@@ -122,7 +131,7 @@ namespace TFlix
                 fragmentTransaction = fragmentManager.BeginTransaction();
                 var x = Frame.ChildCount;
                 //Console.WriteLine(fragmentManager.IsDestroyed);
-
+                Window.DecorView.SystemUiVisibility = 0;
                 switch (FramePos)
                 {
                     case NAV_MAIN:

@@ -70,12 +70,17 @@ namespace TFlix.Adapter
 
             Holder.Title.Text = string.Format("{0} {1}x{2}", Show, Season, Ep);
             Holder.Updated.Text = List.GetSearch.Search[position].Update;
-            Picasso.With(context).Load(List.GetSearch.Search[position].ImgLink).Into(Holder.Image, new Action(async () => { await Task.Run(() => List.GetSearch.Search[position].IMG64 = Base64.EncodeToString(Utils.Utils.GetImageBytes(Holder.Image.Drawable), Base64Flags.UrlSafe)); }), new Action(() => { }));
+            Holder.Image.Post(() => Picasso.With(context).Load(List.GetSearch.Search[position].ImgLink).Into(Holder.Image));
 
-            if (List.GetSearch.Search[position].Title.Contains("LEGENDADO") || List.GetSearch.Search[position].Title.Contains("SEM LEGENDA"))
+            if (List.GetSearch.Search[position].Title.ToUpper().Contains("LEGENDADO") || List.GetSearch.Search[position].Title.ToUpper().Contains("SEM LEGENDA"))
             {
                 Holder.Title.Text += " LEG";
                 isSubtitled = true;
+            }
+            else if (List.GetSearch.Search[position].Title.ToUpper().Contains("LEGENDADO"))
+            {
+                Holder.Title.Text += " NAC";
+                isSubtitled = false;
             }
             else
             {
@@ -129,7 +134,7 @@ namespace TFlix.Adapter
                     var holder = rec.FindViewHolderForAdapterPosition(Pos);
                     var dowload = holder.ItemView.FindViewById<ImageView>(Resource.Id.download_spg);
 
-                    Task.Run(() => Utils.Utils.DownloadVideo(true, Pos, context));
+                    Task.Run(() => Utils.Utils.DownloadVideo(context, List.GetSearch.Search[Pos].Title, true));
                     dowload.SetImageDrawable(context.GetDrawable(Resource.Drawable.baseline_cloud_download_on));
                 }
             }

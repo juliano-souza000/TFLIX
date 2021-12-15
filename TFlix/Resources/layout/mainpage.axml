@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-		<ProgressBar
+<RelativeLayout
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		xmlns:app="http://schemas.android.com/apk/res-auto"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:orientation="vertical" >
+	<ProgressBar
 		android:layout_width="34dp"
 		android:layout_height="34dp"
 		android:layout_alignParentBottom="true"
@@ -13,16 +15,175 @@
 		android:indeterminate="true"
 		android:background="@drawable/circular_progressbar_background"
 		android:progressDrawable="@drawable/circular_progressbar"
-		android:id="@+id/popular_series_loading"
-		/>
+		android:id="@+id/popular_series_loading" />
 	<android.support.v4.widget.SwipeRefreshLayout
-     android:id="@+id/swipeRefreshLayout"
-     android:layout_width="match_parent"
-     android:layout_height="match_parent">
-		<android.support.v7.widget.RecyclerView
+		android:id="@+id/swipeRefreshLayout"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent" >
+		<android.support.v4.widget.NestedScrollView
+			android:id="@+id/nestedscroll"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent">
+			<RelativeLayout
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:descendantFocusability="blocksDescendants">
+				<RelativeLayout
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:id="@+id/topshow_lt">
+					<ImageView
+						android:layout_width="match_parent"
+						android:layout_height="match_parent"
+						android:focusedByDefault="true"
+						android:scaleType="centerCrop"
+						android:background="#505050"
+						android:id="@+id/topshow_image"/>
+					<ImageView
+						android:layout_width="30dp"
+						android:layout_height="30dp"
+						android:scaleType="centerInside"
+						android:layout_marginTop="25dp"
+						android:layout_marginLeft="10dp"
+						android:layout_alignParentTop="true"
+						android:layout_alignParentLeft="true"
+						android:src="@drawable/ic_launcher_512"
+						android:id="@+id/topshow_app_icon" />
+					<View
+						android:layout_width="match_parent"
+						android:layout_height="match_parent"
+						android:layout_alignParentBottom="true"
+						android:background="@drawable/topshow_gradient"/>
+					<RelativeLayout
+						android:layout_width="100dp"
+						android:layout_height="35dp"
+						android:layout_marginBottom="10dp"
+						android:layout_alignParentBottom="true"
+						android:layout_centerHorizontal="true"
+						android:background="@drawable/play_button_rounded"
+						android:id="@+id/watch_button">
+						<ImageView
+							android:layout_width="28dp"
+							android:layout_height="28dp"
+							android:layout_marginLeft="5dp"
+							android:layout_centerVertical="true"
+							android:focusedByDefault="true"
+							android:scaleType="centerCrop"
+							android:tint="@color/appBackgroundColor"
+							android:src="@drawable/baseline_play_arrow_24"
+							android:id="@+id/watch_button_image"/>
+						<TextView
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:layout_centerVertical="true"
+							android:layout_marginLeft="5dp"
+							android:textSize="7pt"
+							android:textStyle="bold"
+							android:textColor="@color/appBackgroundColor"
+							android:text="@string/watch"
+							android:layout_toRightOf="@id/watch_button_image"
+							android:id="@+id/watch_button_text"/>
+					</RelativeLayout>
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_centerHorizontal="true"
+						android:layout_marginBottom="20dp"
+						android:textAlignment="center"
+						android:textSize="5.5pt"
+						android:textColor="@android:color/white"
+						android:layout_above="@id/watch_button"
+						android:id="@+id/watch_title" />
+					<RelativeLayout
+						android:layout_width="25dp"
+						android:layout_height="50dp" 
+						android:layout_marginLeft="30dp"
+						android:layout_marginBottom="10dp"
+						android:layout_alignParentBottom="true"
+						android:layout_centerHorizontal="true"
+						android:layout_toRightOf="@id/watch_button">
+						<TextView
+							android:layout_width="match_parent"
+							android:layout_height="wrap_content"
+							android:layout_alignParentBottom="true"
+							android:gravity="center"
+							android:textSize="4.5pt"
+							android:textColor="@android:color/white"
+							android:text="@string/info"
+							android:id="@+id/watch_info_text" />
+						<ImageView
+							android:layout_width="25dp"
+							android:layout_height="25dp"
+							android:layout_marginBottom="5dp"
+							android:rotation="180"
+							android:background="?selectableItemBackgroundBorderless"
+							android:layout_above="@id/watch_info_text"
+							android:tint="@android:color/white"
+							android:src="@drawable/baseline_info_outline_24"
+							android:id="@+id/watch_info_image"/>
+					</RelativeLayout>
+				</RelativeLayout>
+				<RelativeLayout
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:id="@+id/keepwatching_lt"
+					android:layout_below="@id/topshow_lt">
+					<RelativeLayout
+						android:layout_width="match_parent"
+						android:layout_height="?android:attr/actionBarSize"
+						android:id="@+id/keepwatching_header_layout">
+						<TextView
+							android:text="@string/keep_watching_header"
+							android:layout_width="match_parent"
+							android:layout_height="wrap_content"
+							android:layout_marginTop="10dp"
+							android:layout_marginLeft="10dp"
+							android:layout_centerVertical="true"
+							android:textStyle="bold"
+							android:textSize="7.5pt"
+							android:textColor="#fff"  />
+					</RelativeLayout>
+					<android.support.v7.widget.RecyclerView
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="5dp"
+						android:layout_below="@id/keepwatching_header_layout"
+						android:id="@+id/keepwatching" />
+				</RelativeLayout>
+				<RelativeLayout
+					android:layout_width="match_parent"
+					android:layout_height="?android:attr/actionBarSize"
+					android:id="@+id/popular_series_header_layout"
+					android:layout_below="@id/keepwatching_lt" >
+					<TextView
+						android:id="@+id/popular_series_header"
+						android:text="@string/recent_series_header"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="10dp"
+						android:layout_marginLeft="10dp"
+						android:layout_centerVertical="true"
+						android:textStyle="bold"
+						android:textSize="7.5pt"
+						android:textColor="#fff"  />
+				</RelativeLayout>
+				<android.support.v7.widget.RecyclerView
+					android:layout_width="match_parent"
+					android:layout_height="match_parent"
+					android:layout_marginTop="5dp"
+					android:layout_marginBottom="5dp"
+					android:nestedScrollingEnabled="false"
+					android:focusable="false"
+					android:focusableInTouchMode="false"
+					android:descendantFocusability="blocksDescendants"
+					android:layout_below="@id/popular_series_header_layout"
+					android:id="@+id/popular_series" />
+			</RelativeLayout>
+		</android.support.v4.widget.NestedScrollView>
+	</android.support.v4.widget.SwipeRefreshLayout>
+	<FrameLayout
+		android:id="@+id/error_frame"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
-		android:layout_marginBottom="5dp"
-		android:id="@+id/popular_series"/>
-	</android.support.v4.widget.SwipeRefreshLayout>
+		android:visibility="gone"/>
 </RelativeLayout>

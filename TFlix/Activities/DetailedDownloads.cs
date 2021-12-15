@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Linq;
-
+using System.Threading.Tasks;
 using Android.App;
 using Android.Content;
 using Android.Graphics;
 using Android.OS;
+using Android.Support.V4.Content;
 using Android.Support.V7.App;
 using Android.Support.V7.Widget;
 using Android.Views;
@@ -46,6 +47,7 @@ namespace TFlix.Activities
             ActionBar.Title = List.GetDownloads.Series[Pos].Show;
             ActionBar.SetDisplayShowHomeEnabled(true);
             ActionBar.SetDisplayHomeAsUpEnabled(true);
+            toolbar.SetBackgroundResource(Resource.Drawable.action_bar_background);
 
             Episodes.SetLayoutManager(new LinearLayoutManager(this));
             Episodes.HasFixedSize = true;
@@ -74,45 +76,60 @@ namespace TFlix.Activities
 
         public override bool OnOptionsItemSelected(IMenuItem item)
         {
-            switch(item.ItemId)
+            switch (item.ItemId)
             {
                 case Android.Resource.Id.Home:
-                    if(IsSelecting)
+                    if (IsSelecting)
                     {
                         ActionBar.Subtitle = "";
                         ActionBar.Title = List.GetDownloads.Series[Pos].Show;
                         ActionBar.SetHomeAsUpIndicator(Resource.Drawable.abc_ic_ab_back_material);
-                        toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
+                        toolbar.SetBackgroundResource(Resource.Drawable.action_bar_background);
+                        //toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
                         InvalidateOptionsMenu();
 
                         adapter.IsUserSelecting = false;
                         adapter.NotifyDataSetChanged();
                         IsSelecting = false;
-                    }else
+                    }
+                    else
                     {
                         return base.OnOptionsItemSelected(item);
                     }
                     return true;
 
                 case Resource.Id.delete_appbar:
-                    Utils.Database.DeleteItems();
-                    try
+                    Task.Run(() =>
                     {
-                        if (List.GetDownloads.Series[Pos].Episodes == null || List.GetDownloads.Series[Pos].Episodes.Count == 0)
+                        Utils.Database.DeleteItems();
+                        try
                         {
                             IsSelecting = false;
+                            if (List.GetDownloads.Series[Pos].Episodes == null || List.GetDownloads.Series[Pos].Episodes.Count == 0)
+                            {
+                                Finish();
+                            }
+                            else
+                            {
+                                RunOnUiThread(() =>
+                                {
+                                    adapter.IsUserSelecting = false;
+                                    ActionBar.Subtitle = "";
+                                    ActionBar.Title = List.GetDownloads.Series[Pos].Show;
+                                    ActionBar.SetHomeAsUpIndicator(Resource.Drawable.abc_ic_ab_back_material);
+                                    toolbar.SetBackgroundResource(Resource.Drawable.action_bar_background);
+                                    //toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
+                                    InvalidateOptionsMenu();
+                                    adapter.NotifyDataSetChanged();
+                                });
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.Message);
                             Finish();
                         }
-                        else
-                        {
-                            ActionBar.Subtitle = "";
-                            ActionBar.Title = List.GetDownloads.Series[Pos].Show;
-                            ActionBar.SetHomeAsUpIndicator(Resource.Drawable.abc_ic_ab_back_material);
-                            toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
-                            InvalidateOptionsMenu();
-                        }
-                    }
-                    catch { Finish(); }
+                    });
                     return true;
                 default:
                     return base.OnOptionsItemSelected(item);
@@ -273,7 +290,7 @@ namespace TFlix.Activities
                     adapter.IsUserSelecting = true;
                     adapter.NotifyDataSetChanged();
                 }
-
+                toolbar.SetBackgroundResource(0);
                 toolbar.SetBackgroundColor(Color.ParseColor("#0362FC"));
                 if (List.GetDownloads.Series[Pos].Episodes.Where(row => row.IsSelected).Count() > 0)
                 {
@@ -296,7 +313,8 @@ namespace TFlix.Activities
                 ActionBar.Subtitle = "";
                 ActionBar.Title = List.GetDownloads.Series[Pos].Show;
                 ActionBar.SetHomeAsUpIndicator(Resource.Drawable.abc_ic_ab_back_material);
-                toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
+                toolbar.SetBackgroundResource(Resource.Drawable.action_bar_background);
+                //toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
             }
             IsSelecting = userSelecting;
         }

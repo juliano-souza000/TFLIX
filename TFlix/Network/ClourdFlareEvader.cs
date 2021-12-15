@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace SeuSeriadoTest
+namespace TFlix.Network
 {
     public class CloudFlareEvader
     {
@@ -25,22 +25,64 @@ namespace SeuSeriadoTest
 
             //Download the original page
             var uri = new Uri(url);
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(uri);
+            req.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
             req.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0";
+            //req.Host = "seuseriado.com";
+            //Console.WriteLine(url.Replace("http://", ""));
+            //req.Proxy = new WebProxy("www.google.com:80");
+
             //Try to make the usual request first. If this fails with a 503, the page is behind cloudflare.
             try
             {
+                WebClient webClient;
+
                 var res = req.GetResponse();
                 string html = "";
                 using (var reader = new StreamReader(res.GetResponseStream()))
                     html = reader.ReadToEnd();
-                return new WebClient();
+                if (html.Contains("form action=\"/cdn-cgi/phish-bypass\" method=\"GET\""))
+                {
+                    var atok = html.Substring(html.IndexOf("<form action=\"/cdn-cgi/phish-bypass\" method=\"GET\">"), html.IndexOf("</form>") - html.IndexOf(" <form action=\"/cdn-cgi/phish-bypass\" method=\"GET\">"));
+                    atok = atok.Substring(atok.LastIndexOf("value"), atok.IndexOf("<button") - atok.LastIndexOf("value"));
+                    atok = atok.Replace("value=\"", "");
+                    atok = atok.Replace("\">", "");
+                    atok = atok.Remove(atok.IndexOf('\n'));
+                    var uri2 = new Uri("https://seuseriado.com/cdn-cgi/phish-bypass?u=%2F&atok=" + atok);
+                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri2);
+                    request.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+                    request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0";
+                    request.AllowAutoRedirect = false;
+                    request.Host = "seuseriado.com";
+                    var reader = new StreamReader(request.GetResponse().GetResponseStream());
+                    var resp = reader.ReadToEnd();
+
+                    var cookie_container = new CookieContainer();
+                    //using a custom function because ex.Response.Cookies returns an empty set ALTHOUGH cookies were sent back.
+                    var initial_cookies = GetAllCookiesFromHeader(request.GetResponse().Headers["set-cookie"], uri2.Host);
+                    foreach (Cookie init_cookie in initial_cookies)
+                    {
+                        Console.WriteLine("{0}={1}", init_cookie.Name, init_cookie.Value);
+                        cookie_container.Add(init_cookie);
+                    }
+
+                    webClient = new WebClientEx(cookie_container);
+                }
+                else
+                {
+                    webClient = new WebClient();
+                }
+
+                return webClient;
             }
             catch (WebException ex) //We usually get this because of a 503 service not available.
             {
+                Console.WriteLine("Message: {0} StackTrace: {1}", ex.Message, ex.StackTrace);
                 string html = "";
+
                 using (var reader = new StreamReader(ex.Response.GetResponseStream()))
                     html = reader.ReadToEnd();
+
                 //If we get on the landing page, Cloudflare gives us a User-ID token with the cookie. We need to save that and use it in the next request.
                 var cookie_container = new CookieContainer();
                 //using a custom function because ex.Response.Cookies returns an empty set ALTHOUGH cookies were sent back.
@@ -226,18 +268,19 @@ namespace SeuSeriadoTest
  (user https://stackoverflow.com/users/129124/pavel-savara) */
     public class WebClientEx : WebClient
     {
-        public WebClientEx(CookieContainer container)
-        {
-            this.container = container;
-        }
-
         public CookieContainer CookieContainer
         {
             get { return container; }
             set { container = value; }
         }
 
+
         private CookieContainer container = new CookieContainer();
+
+        public WebClientEx(CookieContainer container)
+        {
+            this.container = container;
+        }
 
         protected override WebRequest GetWebRequest(Uri address)
         {
@@ -247,8 +290,10 @@ namespace SeuSeriadoTest
             {
                 request.CookieContainer = container;
             }
+            request.AllowAutoRedirect = false;
             return r;
         }
+
 
         protected override WebResponse GetWebResponse(WebRequest request, IAsyncResult result)
         {

@@ -18,7 +18,7 @@
           android:thickness="15dp"
           android:useLevel="false"
                 >
-        <solid android:color="#ff0300" />
+        <solid android:color="@color/colorRed" />
       </shape>
     </clip>
   </item>

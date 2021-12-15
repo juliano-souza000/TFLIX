@@ -39,6 +39,7 @@
     <EnableLLVM>false</EnableLLVM>
     <BundleAssemblies>false</BundleAssemblies>
     <AndroidEnableMultiDex>true</AndroidEnableMultiDex>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>false</DebugSymbols>
@@ -59,6 +60,7 @@
     <EnableProguard>false</EnableProguard>
     <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
     <AndroidEnableMultiDex>true</AndroidEnableMultiDex>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -66,6 +68,9 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
     <Reference Include="Mono.Android" />
+    <Reference Include="ToddyUtils">
+      <HintPath>..\References\ToddyUtils.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Activities\DetailedDownloads.cs" />
@@ -74,9 +79,11 @@
     <Compile Include="Activities\SplashActivity.cs" />
     <Compile Include="Adapter\DownloadsAdapter.cs" />
     <Compile Include="Adapter\EpisodesAdapter.cs" />
+    <Compile Include="Adapter\KeepWatchingAdapter.cs" />
     <Compile Include="Adapter\MainPage_SeriesAdapter.cs" />
     <Compile Include="Adapter\SearchAdapter.cs" />
     <Compile Include="Ads\AdsListener.cs" />
+    <Compile Include="Decoration\MarginItemDecoration.cs" />
     <Compile Include="Dialog\Synopsis.cs" />
     <Compile Include="Event\Progress.cs" />
     <Compile Include="Event\Download.cs" />
@@ -86,12 +93,10 @@
     <Compile Include="Interface\IOnPauseCancelDownload.cs" />
     <Compile Include="Interface\IOnUserSelectItems.cs" />
     <Compile Include="List\Downloads.cs" />
+    <Compile Include="List\KeepWatching.cs" />
     <Compile Include="List\MainPageSeries.cs" />
     <Compile Include="List\Queue.cs" />
     <Compile Include="List\Search.cs" />
-    <Compile Include="Network\NewWebClient.cs">
-      <SubType>Component</SubType>
-    </Compile>
     <Compile Include="Resources\Resource.designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\DownloadFiles.cs" />
@@ -100,10 +105,13 @@
     <Compile Include="Srt\SrtParser.cs" />
     <Compile Include="Srt\SubtitleItem.cs" />
     <Compile Include="Utils\Bookmark.cs" />
-    <Compile Include="Utils\ClourdFlareEvader.cs" />
+    <Compile Include="Network\ClourdFlareEvader.cs" />
     <Compile Include="Utils\Database.cs" />
+    <Compile Include="Utils\PercentStyle.cs" />
     <Compile Include="Utils\RequestCode.cs" />
     <Compile Include="Utils\Utils.cs" />
+    <Compile Include="Views\SquareProgressBar.cs" />
+    <Compile Include="Views\SquareProgressView.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\AboutResources.txt" />
@@ -134,6 +142,9 @@
   <ItemGroup>
     <PackageReference Include="ByteSize">
       <Version>2.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="DnsClient">
+      <Version>1.2.0</Version>
     </PackageReference>
     <PackageReference Include="Jint">
       <Version>2.11.58</Version>
@@ -192,7 +203,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\mipmap-anydpi-v26\" />
-    <Folder Include="Views\" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\anim\fadein.xml" />
@@ -335,9 +345,6 @@
     <AndroidResource Include="Resources\drawable\baseline_mobile_friendly_24.xml" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidResource Include="Resources\drawable\progressbar_nobackground.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <AndroidResource Include="Resources\drawable\play_circle_outline.xml" />
   </ItemGroup>
   <ItemGroup>
@@ -420,6 +427,54 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\drawable\ic_launcher_512.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\keep_watching_row.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\progressbar_nobackground.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\progressbarview.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\values\attrs.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\progressbar_background.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\action_bar_background.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\mainpage_header_gradient.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\mainpage_error.axml">
+      <Generator>MSBuild:UpdateGeneratedFiles</Generator>
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\topshow_gradient.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\play_button_rounded.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\notification_download_completed_big.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\menu\keepwatching_menu.xml">
+      <Generator>MSBuild:UpdateGeneratedFiles</Generator>
+      <SubType>Designer</SubType>
+    </AndroidResource>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

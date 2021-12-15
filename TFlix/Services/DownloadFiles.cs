@@ -94,16 +94,19 @@ namespace TFlix.Services
             {
                 Console.WriteLine("Message: " + e.Message + " StackTrace: " + e.StackTrace);
 
-                var builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                   .SetSmallIcon(Android.Resource.Drawable.StatSysDownloadDone)
-                   .SetContentText("Falha no download.")
-                   .SetStyle(new NotificationCompat.DecoratedCustomViewStyle())
-                   .SetColor(Android.Graphics.Color.ParseColor("#FFD80C0C"))
-                   .SetPriority((int)NotificationPriority.Low)
-                   .SetOngoing(false)
-                   .SetOnlyAlertOnce(true);
+                if (!e.Message.Contains("The request was aborted"))
+                {
+                    var builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                       .SetSmallIcon(Android.Resource.Drawable.StatSysDownloadDone)
+                       .SetContentText("Falha no download.")
+                       .SetStyle(new NotificationCompat.DecoratedCustomViewStyle())
+                       .SetColor(Android.Graphics.Color.ParseColor("#FFD80C0C"))
+                       .SetPriority((int)NotificationPriority.Low)
+                       .SetOngoing(false)
+                       .SetOnlyAlertOnce(true);
 
-                notificationManager.Notify(NOTIFICATION_ID, builder.Build());
+                    notificationManager.Notify(NOTIFICATION_ID, builder.Build());
+                }
             }
         }
 
@@ -243,7 +246,7 @@ namespace TFlix.Services
             download.AddRange(startRange);
 
             if (!Utils.Database.IsSeasonOnDB(ShowSeason, Show, IsSubtitled))
-                Utils.Database.InsertData("", Show, ShowThumb, ShowSeason, 0, 0, 0, IsSubtitled, "", 0, "");
+                Utils.Database.InsertData("", Show, ShowThumb, ShowSeason, -1, 0, 0, IsSubtitled, "", 0, "");
             Utils.Database.InsertData(Thumb, Show, ShowThumb, ShowSeason, Ep, 0, bytes_total, IsSubtitled, System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Series", FullTitle), Duration, FullTitle);
 
             try
@@ -273,16 +276,23 @@ namespace TFlix.Services
             }
             catch { }
 
+            var bigRemoteView = new RemoteViews(PackageName, Resource.Layout.notification_download_completed_big);
+
+            bigRemoteView.SetTextViewText(Resource.Id.big_content_completed_title, "Download Completo!");
+            bigRemoteView.SetTextViewText(Resource.Id.big_content_completed_show, Show);
+            bigRemoteView.SetTextViewText(Resource.Id.big_content_completed_se, string.Format("T{0}:E{1}", ShowSeason, Ep));
+
             Builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                .SetSmallIcon(Resource.Drawable.baseline_mobile_friendly_24)
                .SetContentText("Download Completo!")
+               .SetCustomBigContentView(bigRemoteView)
                .SetStyle(new NotificationCompat.DecoratedCustomViewStyle())
                .SetColor(Android.Graphics.Color.ParseColor("#FFD80C0C"))
                .SetPriority((int)NotificationPriority.Low)
                .SetOngoing(false)
                .SetOnlyAlertOnce(true);
-
-            notificationManager.Notify(NOTIFICATION_ID, Builder.Build());
+            notificationManager.Cancel(NOTIFICATION_ID);
+            notificationManager.Notify(Utils.RequestCode.ID(), Builder.Build());
         }
 
         private int DownloadProgressChanged(long received, int PreviousPercentage)
@@ -403,9 +413,16 @@ namespace TFlix.Services
                 {
                     notificationManager.Cancel(NOTIFICATION_ID);
 
+                    var bigRemoteView = new RemoteViews(PackageName, Resource.Layout.notification_download_completed_big);
+
+                    bigRemoteView.SetTextViewText(Resource.Id.big_content_completed_title, "Falha no download.");
+                    bigRemoteView.SetTextViewText(Resource.Id.big_content_completed_show, Show);
+                    bigRemoteView.SetTextViewText(Resource.Id.big_content_completed_se, string.Format("T{0}:E{1}", ShowSeason, Ep));
+
                     Builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                        .SetSmallIcon(Resource.Drawable.baseline_error_outline_24)
                        .SetContentText("Falha no download.")
+                       .SetCustomBigContentView(bigRemoteView)
                        .SetStyle(new NotificationCompat.DecoratedCustomViewStyle())
                        .SetColor(Android.Graphics.Color.ParseColor("#FFD80C0C"))
                        .SetPriority((int)NotificationPriority.Low)

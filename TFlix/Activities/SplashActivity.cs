@@ -25,7 +25,7 @@ namespace TFlix.Activities
             worker.DoWork += (s, e) =>
             {
                 if (GetMainPageSeries.Series == null)
-                    GetMainPageSeries.Series = JsonConvert.DeserializeObject<List<MainPageSeries>>(Utils.Utils.Download(0));
+                    GetMainPageSeries.Series = JsonConvert.DeserializeObject<List<MainPageSeries>>(Utils.Utils.Download(1));
             };
             worker.RunWorkerAsync();
             worker.RunWorkerCompleted += (s, e) =>

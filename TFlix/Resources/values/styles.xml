@@ -1,11 +1,13 @@
 <resources>
 
-    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
-      <item name="colorPrimary">@color/colorPrimary</item>
-       <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-       <item name="colorAccent">@color/colorAccent</item>
-      <item name="popupTheme">@style/PopupMenuTheme</item>
-    </style>
+   <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+     <item name="colorPrimary">@color/colorPrimary</item>
+     <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+     <item name="colorAccent">@color/colorAccent</item>
+     <item name="popupTheme">@style/PopupMenuTheme</item>
+     <item name="android:colorBackground">@color/appBackgroundColor</item>
+     <item name="android:windowBackground">@color/appBackgroundColor</item>
+   </style>
 
   <style name="AppTheme.AdAttribution">
     <item name="android:layout_width">wrap_content</item>

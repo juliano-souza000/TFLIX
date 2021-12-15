@@ -24,16 +24,18 @@ namespace TFlix.Adapter
 {
     class MainPage_SeriesAdapter : RecyclerView.Adapter
     {
-        Context context;
-        RecyclerView rec;
+        private Context context;
+        private RecyclerView rec;
+        private Fragments.MainPageFragment MainFragm;
 
         private const int AdRow = 0;
         private const int ShowRow = 1;
 
-        public MainPage_SeriesAdapter(Context c, RecyclerView recyclerView)
+        public MainPage_SeriesAdapter(Context c, RecyclerView recyclerView, Fragments.MainPageFragment frag)
         {
             context = c;
             rec = recyclerView;
+            MainFragm = frag;
         }
 
         public override int ItemCount { get { return List.GetMainPageSeries.Series.Count + ((int)List.GetMainPageSeries.Series.Count / 7); } }
@@ -119,17 +121,23 @@ namespace TFlix.Adapter
 
                 Holder.Updated.Text = List.GetMainPageSeries.Series[position].Update;
 
-                Picasso.With(context).Load(List.GetMainPageSeries.Series[position].ImgLink).Into(Holder.Image, new Action(async () => { await Task.Run(() => List.GetMainPageSeries.Series[position].IMG64 = Base64.EncodeToString(Utils.Utils.GetImageBytes(Holder.Image.Drawable), Base64Flags.UrlSafe)); }), new Action(() => { }));
+                Holder.Image.Post(() => Picasso.With(context).Load(List.GetMainPageSeries.Series[position].ImgLink).Into(Holder.Image));
 
-                if (List.GetMainPageSeries.Series[position].Title.Contains("LEGENDADO") || List.GetMainPageSeries.Series[position].Title.Contains("SEM LEGENDA"))
+                if (List.GetMainPageSeries.Series[position].Title.ToUpper().Contains("LEGENDADO") || List.GetMainPageSeries.Series[position].Title.ToUpper().Contains("SEM LEGENDA"))
+                {
                     isSubtitled = true;
-                else
-                    isSubtitled = false;
-
-                if (isSubtitled)
                     Holder.Title.Text += " Legendado";
+                }
+                else if(List.GetMainPageSeries.Series[position].Title.ToUpper().Contains("NACIONAL"))
+                {
+                    isSubtitled = false;
+                    Holder.Title.Text += " Nacional";
+                }
                 else
+                {
+                    isSubtitled = false;
                     Holder.Title.Text += " Dublado";
+                }
 
                 if (!List.GetMainPageSeries.Series[position].AlreadyChecked)
                 {
@@ -171,7 +179,6 @@ namespace TFlix.Adapter
 
                 //var adRequest = new AdRequest.Builder().AddTestDevice("898E71950C45AB644AEFAC8F2CA3857D").Build();
                 var adRequest = new AdRequest.Builder().Build();
-                //Console.WriteLine(adRequest.Birthday.ToString());
                 Holder.Ads.Post(() => Holder.Ads.LoadAd(adRequest));
             }
         }
@@ -181,18 +188,28 @@ namespace TFlix.Adapter
             try
             {
                 View v = (View)sender;
+                MainFragm.Loading.BringToFront();
+                MainFragm.Loading.Visibility = ViewStates.Visible;
                 int Pos = rec.GetChildAdapterPosition((View)v.Parent.Parent);
                 if (Pos != 0)
                     Pos -= (int)Pos / 7;
                 var fragmentMan = ((Android.Support.V7.App.AppCompatActivity)context).SupportFragmentManager.BeginTransaction();
 
-                if (string.IsNullOrWhiteSpace(List.GetMainPageSeries.Series[Pos].Synopsis))
-                    List.GetMainPageSeries.Series[Pos].Synopsis = Utils.Utils.GetSynopsis(Utils.Utils.VideoPageUrl(List.GetMainPageSeries.Series[Pos].Title));
-
-                Synopsis synopsisDialog = new Synopsis();
-                synopsisDialog.SynopsisTitleString = List.GetMainPageSeries.Series[Pos].Title;
-                synopsisDialog.SynopsisContentString = List.GetMainPageSeries.Series[Pos].Synopsis;
-                synopsisDialog.Show(fragmentMan, "SDF");
+                BackgroundWorker worker = new BackgroundWorker();
+                worker.DoWork += (s, ex) =>
+                {
+                    if (string.IsNullOrWhiteSpace(List.GetMainPageSeries.Series[Pos].Synopsis))
+                        List.GetMainPageSeries.Series[Pos].Synopsis = Utils.Utils.GetSynopsis(Utils.Utils.VideoPageUrl(List.GetMainPageSeries.Series[Pos].Title));
+                };
+                worker.RunWorkerAsync();
+                worker.RunWorkerCompleted += (s, ex) =>
+                {
+                    Synopsis synopsisDialog = new Synopsis();
+                    synopsisDialog.SynopsisTitleString = List.GetMainPageSeries.Series[Pos].Title;
+                    synopsisDialog.SynopsisContentString = List.GetMainPageSeries.Series[Pos].Synopsis;
+                    synopsisDialog.Show(fragmentMan, "SDF");
+                    MainFragm.Loading.Visibility = ViewStates.Gone;
+                };
             }
             catch { }
         }
@@ -211,7 +228,7 @@ namespace TFlix.Adapter
                     var holder = rec.FindViewHolderForAdapterPosition(Pos);
                     var dowload = holder.ItemView.FindViewById<ImageView>(Resource.Id.download_mpg);
 
-                    Task.Run(() => Utils.Utils.DownloadVideo(false, Pos, context));
+                    Task.Run(() => Utils.Utils.DownloadVideo(context, List.GetMainPageSeries.Series[Pos].Title, true));
                     dowload.SetImageDrawable(context.GetDrawable(Resource.Drawable.baseline_cloud_download_on));
                 }
             }

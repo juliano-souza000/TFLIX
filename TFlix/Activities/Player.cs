@@ -28,6 +28,8 @@ namespace TFlix.Activities
     {
         private WebClient request = new WebClient();
         private BackgroundWorker worker = new BackgroundWorker();
+        private BackgroundWorker subWorker = new BackgroundWorker();
+        private BackgroundWorker videoWorker = new BackgroundWorker();
         private UnifiedNativeAd _NativeAd;
 
         //CustomMediaController
@@ -62,6 +64,8 @@ namespace TFlix.Activities
         private string response;
         private string VideoPlayerDataString;
 
+        private bool IsFromTopShow;
+        private bool IsFromKeepWatching;
         private bool ShowSubtitles = true;
         private bool IsFromSearch;
         private bool IsOnline;
@@ -119,8 +123,10 @@ namespace TFlix.Activities
             SSurfaceHolder = SSurfaceView.Holder;
             SSurfaceHolder.AddCallback(this);
 
-            Pos = Intent.Extras.GetInt("Pos");
+            Pos = Intent.Extras.GetInt("Pos", -1);
             IsOnline = Intent.Extras.GetBoolean("IsOnline");
+            IsFromTopShow = Intent.Extras.GetBoolean("IsFromTopShow", false);
+            IsFromKeepWatching = Intent.Extras.GetBoolean("IsFromKeepWatching", false);
 
             ControllerLayout.Visibility = ViewStates.Gone;
             Loading.Visibility = ViewStates.Gone;
@@ -184,6 +190,17 @@ namespace TFlix.Activities
             }
             catch { }
 
+            try
+            {
+                if(worker.IsBusy)
+                    worker.CancelAsync();
+                if (subWorker.IsBusy)
+                    subWorker.CancelAsync();
+                if (videoWorker.IsBusy)
+                    videoWorker.CancelAsync();
+            }
+            catch { }
+
             if (_NativeAd != null)
                 _NativeAd.Destroy();
 
@@ -203,6 +220,9 @@ namespace TFlix.Activities
             ControllerLayout.Touch -= TouchEv;
             PlayPause.Click -= PlayPause_Click;
             Connectivity.ConnectivityChanged -= Connectivity_ConnectivityChanged;
+
+            this.RequestedOrientation = Android.Content.PM.ScreenOrientation.Portrait;
+
             base.OnDestroy();
         }
 
@@ -235,89 +255,60 @@ namespace TFlix.Activities
         private void Download_Click(object sender, EventArgs e)
         {
             bool download = false;
-            if (IsFromSearch && !List.GetSearch.Search[Pos].Downloading && !List.GetSearch.Search[Pos].Downloaded)
-                download = true;
-            else if (!IsFromSearch && !List.GetMainPageSeries.Series[Pos].Downloading && !List.GetMainPageSeries.Series[Pos].Downloaded)
-                download = true;
 
-            if (download)
+            if (!IsFromTopShow)
             {
-                Pause();
-                DownloadVideo();
-            }
-
-        }
-
-        private void DownloadVideo()
-        {
-            try
-            {
-                if (!System.IO.Directory.Exists(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail"))
-                    System.IO.Directory.CreateDirectory(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail");
-
-                if (!IsFromSearch)
+                if (!IsFromKeepWatching)
                 {
-                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetMainPageSeries.Series[Pos].Title), Utils.Utils.GetImageBytes(Thumbnail.Drawable));
-                    List.GetMainPageSeries.Series[Pos].EPThumb = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title);
+                    if (IsFromSearch && !List.GetSearch.Search[Pos].Downloading && !List.GetSearch.Search[Pos].Downloaded)
+                        download = true;
+                    else if (!IsFromSearch && !List.GetMainPageSeries.Series[Pos].Downloading && !List.GetMainPageSeries.Series[Pos].Downloaded)
+                        download = true;
                 }
                 else
                 {
-                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title), Utils.Utils.GetImageBytes(Thumbnail.Drawable));
-                    List.GetSearch.Search[Pos].EPThumb = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Thumbnail", List.GetSearch.Search[Pos].Title);
+                    if (!List.KeepWatchingList.KeepWatching[Pos].Downloading && List.KeepWatchingList.KeepWatching[Pos].IsOnline)
+                        download = true;
                 }
-            }
-            catch { }
-
-            if (CheckSelfPermission(Android.Manifest.Permission.ReadExternalStorage) == Android.Content.PM.Permission.Granted
-                && CheckSelfPermission(Android.Manifest.Permission.WriteExternalStorage) == Android.Content.PM.Permission.Granted)
-            {
-
-                try
-                {
-                    if (!System.IO.Directory.Exists(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles"))
-                        System.IO.Directory.CreateDirectory(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles");
-
-                    if (!IsFromSearch)
-                    {
-                        System.IO.File.WriteAllText(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", List.GetMainPageSeries.Series[Pos].Title + ".srt"), System.IO.File.ReadAllText(filePath));
-                    }
-                    else
-                    {
-                        System.IO.File.WriteAllText(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + "/Subtitles", List.GetSearch.Search[Pos].Title.Replace("Online,", "Online ")+ ".srt"), System.IO.File.ReadAllText(filePath));
-                    }
-                }
-                catch { }
-
-                Intent downloader = new Intent(this, typeof(DownloadFilesService));
-                downloader.PutExtra("DownloadURL", VideoPlayerDataString);
-                downloader.PutExtra("DownloadSHOWID", Pos);
-                downloader.PutExtra("IsFromSearch", IsFromSearch);
-                //downloader.PutExtra("DownloadEPDuration", player.Duration);
-
-                if (Utils.Utils.serviceConnection == null)
-                {
-                    Intent serviceBinder = new Intent(this, typeof(DownloadFilesService));
-                    Utils.Utils.serviceConnection = new DownloadFileServiceConnection();
-                    Application.BindService(serviceBinder, Utils.Utils.serviceConnection, Bind.AutoCreate);
-                }
-
-                Application.StartService(downloader);
-                
-
-                player.Stop();
-                player.Release();
-                this.Finish();
-               
             }
             else
             {
-                Utils.Utils.AskPermission(this);
+                if (!List.GetMainPageSeries.TopShow.Downloading && !List.GetMainPageSeries.TopShow.Downloaded)
+                    download = true;
             }
+
+            if (download)
+            {
+                string FullTitle;
+
+                Pause();
+
+                if (!IsFromTopShow)
+                {
+                    if (!IsFromKeepWatching)
+                    {
+                        if (!IsFromSearch)
+                            FullTitle = List.GetMainPageSeries.Series[Pos].Title;
+                        else
+                            FullTitle = List.GetSearch.Search[Pos].Title;
+                    }
+                    else
+                        FullTitle = List.KeepWatchingList.KeepWatching[Pos].Fulltitle;
+                    
+                }
+                else
+                {
+                    FullTitle = List.GetMainPageSeries.TopShow.Title;
+                }
+                Utils.Utils.DownloadVideo(this, FullTitle, true);
+                Finish();
+            }
+
         }
 
         private void Subtitles_Click(object sender, EventArgs e)
         {
-           if(ShowSubtitles)
+            if (ShowSubtitles)
             {
                 Subtitles.SetImageResource(Resource.Drawable.baseline_subtitles_off);
                 ShowSubtitles = false;
@@ -472,7 +463,7 @@ namespace TFlix.Activities
                 byte[] Data = request.DownloadData(Url);
                 response = Encoding.UTF8.GetString(Data);
                 string ImgURL="";
-                BackgroundWorker worker = new BackgroundWorker();
+
                 worker.DoWork += (s, e) =>
                 {
                     try
@@ -519,8 +510,8 @@ namespace TFlix.Activities
         {
             string URL;
             byte[] VideoPlayerData;
-            BackgroundWorker worker = new BackgroundWorker();
-            worker.DoWork += (s, e) =>
+
+            videoWorker.DoWork += (s, e) =>
             {
                 try
                 {
@@ -594,8 +585,8 @@ namespace TFlix.Activities
                             RunOnUiThread(() =>
                             {
                                 Toast.MakeText(this, "Esse título não está disponivel no momento. Por favor, tente novamente mais tarde.", ToastLength.Long).Show();
-                                this.Finish();
                             });
+                            this.Finish();
                         }
                         else
                         {
@@ -625,12 +616,12 @@ namespace TFlix.Activities
                         RunOnUiThread(() =>
                         {
                             Toast.MakeText(this, "Esse título não está disponivel no momento. Por favor, tente novamente mais tarde.", ToastLength.Long).Show();
-                            this.Finish();
                         });
+                        this.Finish();
                     }
                 }
             };
-            worker.RunWorkerAsync();
+            videoWorker.RunWorkerAsync();
         }
 
         public void SurfaceChanged(ISurfaceHolder holder, [GeneratedEnum] Format format, int width, int height) { }
@@ -645,35 +636,64 @@ namespace TFlix.Activities
 
             if (IsOnline)
             {
-                if (!Intent.Extras.GetBoolean("IsFromSearch"))
+                if (!IsFromTopShow)
                 {
-                    IsFromSearch = false;
-                    PTitle.Text = List.GetMainPageSeries.Series[Pos].Title;
-                    DownloadThumbnail(Utils.Utils.VideoPageUrl(List.GetMainPageSeries.Series[Pos].Title));
-                    if (List.GetMainPageSeries.Series[Pos].Downloading)
-                        Download.SetImageResource(Resource.Drawable.baseline_cloud_download_on);
+                    if (!IsFromKeepWatching)
+                    {
+                        if (!Intent.Extras.GetBoolean("IsFromSearch"))
+                        {
+                            IsFromSearch = false;
+                            PTitle.Text = List.GetMainPageSeries.Series[Pos].Title;
+                            DownloadThumbnail(Utils.Utils.VideoPageUrl(List.GetMainPageSeries.Series[Pos].Title));
+                            if (List.GetMainPageSeries.Series[Pos].Downloading)
+                                Download.SetImageResource(Resource.Drawable.baseline_cloud_download_on);
 
-                    (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(List.GetMainPageSeries.Series[Pos].Title);
+                            (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(List.GetMainPageSeries.Series[Pos].Title);
 
-                    if (List.GetMainPageSeries.Series[Pos].Title.Contains("LEGENDADO") || List.GetMainPageSeries.Series[Pos].Title.Contains("SEM LEGENDA"))
-                        IsSubtitled = true;
-                    BookmarkInMillisecond = Utils.Bookmark.GetBookmarkInMillisecond(Show, Ep, Season, IsSubtitled);
+                            if (List.GetMainPageSeries.Series[Pos].Title.ToUpper().Contains("LEGENDADO") || List.GetMainPageSeries.Series[Pos].Title.ToUpper().Contains("SEM LEGENDA"))
+                                IsSubtitled = true;
+                            BookmarkInMillisecond = Utils.Bookmark.GetBookmarkInMillisecond(Show, Ep, Season, IsSubtitled);
+                        }
+                        else
+                        {
+                            IsFromSearch = true;
+                            PTitle.Text = List.GetSearch.Search[Pos].Title.Replace("Online,", "Online ");
+                            DownloadThumbnail(Utils.Utils.VideoPageUrl(List.GetSearch.Search[Pos].Title.Replace("Online,", "Online ")));
+                            if (List.GetSearch.Search[Pos].Downloading)
+                                Download.SetImageResource(Resource.Drawable.baseline_cloud_download_on);
+
+                            (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(List.GetSearch.Search[Pos].Title);
+
+                            if (List.GetSearch.Search[Pos].Title.ToUpper().Contains("LEGENDADO") || List.GetSearch.Search[Pos].Title.ToUpper().Contains("SEM LEGENDA"))
+                                IsSubtitled = true;
+                            BookmarkInMillisecond = Utils.Bookmark.GetBookmarkInMillisecond(Show, Ep, Season, IsSubtitled);
+                        }
+                    }
+                    else
+                    {
+                        PTitle.Text = List.KeepWatchingList.KeepWatching[Pos].Fulltitle;
+                        DownloadThumbnail(Utils.Utils.VideoPageUrl(List.KeepWatchingList.KeepWatching[Pos].Fulltitle));
+                        if (List.KeepWatchingList.KeepWatching[Pos].Downloading)
+                            Download.SetImageResource(Resource.Drawable.baseline_cloud_download_on);
+                        (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(List.KeepWatchingList.KeepWatching[Pos].Fulltitle);
+
+                        if (List.KeepWatchingList.KeepWatching[Pos].Fulltitle.ToUpper().Contains("LEGENDADO") || List.KeepWatchingList.KeepWatching[Pos].Fulltitle.ToUpper().Contains("SEM LEGENDA"))
+                            IsSubtitled = true;
+                        BookmarkInMillisecond = Utils.Bookmark.GetBookmarkInMillisecond(Show, Ep, Season, IsSubtitled);
+                    }
                 }
                 else
                 {
-                    IsFromSearch = true;
-                    PTitle.Text = List.GetSearch.Search[Pos].Title.Replace("Online,", "Online ");
-                    DownloadThumbnail(Utils.Utils.VideoPageUrl(List.GetSearch.Search[Pos].Title.Replace("Online,", "Online ")));
-                    if (List.GetSearch.Search[Pos].Downloading)
+                    PTitle.Text = List.GetMainPageSeries.TopShow.Title;
+                    DownloadThumbnail(Utils.Utils.VideoPageUrl(List.GetMainPageSeries.TopShow.Title));
+                    if (List.GetMainPageSeries.TopShow.Downloading)
                         Download.SetImageResource(Resource.Drawable.baseline_cloud_download_on);
+                    (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(List.GetMainPageSeries.TopShow.Title);
 
-                    (Show, Season, Ep) = Utils.Utils.BreakFullTitleInParts(List.GetSearch.Search[Pos].Title);
-
-                    if (List.GetSearch.Search[Pos].Title.Contains("LEGENDADO") || List.GetSearch.Search[Pos].Title.Contains("SEM LEGENDA"))
+                    if (List.GetMainPageSeries.TopShow.Title.ToUpper().Contains("LEGENDADO") || List.GetMainPageSeries.TopShow.Title.ToUpper().Contains("SEM LEGENDA"))
                         IsSubtitled = true;
                     BookmarkInMillisecond = Utils.Bookmark.GetBookmarkInMillisecond(Show, Ep, Season, IsSubtitled);
                 }
-                Utils.Bookmark.InsertData(Show, Ep, Season, IsSubtitled);
                 GetVideo();
             }
             else
@@ -778,6 +798,7 @@ namespace TFlix.Activities
 
             player.SetOnSeekCompleteListener(this);
 
+
             if(current == Xamarin.Essentials.NetworkAccess.Internet && HasAdFinished || !IsOnline)
                 Start();
 
@@ -794,30 +815,79 @@ namespace TFlix.Activities
                 Season = List.GetDownloads.Series[listPos].Episodes[Pos].ShowSeason;
                 IsSubtitled = List.GetDownloads.Series[listPos].IsSubtitled;
 
-                Utils.Bookmark.InsertData(Show, Ep, Season, IsSubtitled);
-            }
-
-            if(!IsFromSearch)
-            {
-                List.GetMainPageSeries.Series[Pos].Downloaded = Utils.Database.IsItemDownloaded(Season, Show, IsSubtitled, Ep);
-                List.GetMainPageSeries.Series[Pos].AlreadyChecked = true;
-
-                if (List.GetMainPageSeries.Series[Pos].Downloaded)
-                {
-                    Download.SetColorFilter(Color.Argb(255, 255, 255, 255));
-                    Download.SetImageDrawable(GetDrawable(Resource.Drawable.baseline_cloud_done_24));
-                }
+                Utils.Bookmark.InsertData(Show, Ep, Season, IsSubtitled, List.GetDownloads.Series[listPos].ShowThumb, false, List.GetDownloads.Series[listPos].Episodes[Pos].Duration, List.GetDownloads.Series[listPos].Episodes[Pos].FullTitle);
             }
             else
             {
-                if (List.GetSearch.Search[Pos].Downloaded)
+                string showThumb;
+                string fullTitle;
+
+                if (!IsFromTopShow)
                 {
-                    Download.SetColorFilter(Color.Argb(255, 255, 255, 255));
-                    Download.SetImageDrawable(GetDrawable(Resource.Drawable.baseline_cloud_done_24));
+                    if (!IsFromKeepWatching)
+                    {
+                        if (!IsFromSearch)
+                        {
+                            List.GetMainPageSeries.Series[Pos].Downloaded = Utils.Database.IsItemDownloaded(Season, Show, IsSubtitled, Ep);
+                            List.GetMainPageSeries.Series[Pos].AlreadyChecked = true;
+
+                            showThumb = List.GetMainPageSeries.Series[Pos].ImgLink;
+                            fullTitle = List.GetMainPageSeries.Series[Pos].Title;
+
+                            if (List.GetMainPageSeries.Series[Pos].Downloaded)
+                            {
+                                Download.SetColorFilter(Color.Argb(255, 255, 255, 255));
+                                Download.SetImageDrawable(GetDrawable(Resource.Drawable.baseline_cloud_done_24));
+                            }
+                        }
+                        else
+                        {
+                            List.GetSearch.Search[Pos].Downloaded = Utils.Database.IsItemDownloaded(Season, Show, IsSubtitled, Ep);
+                            List.GetSearch.Search[Pos].AlreadyChecked = true;
+
+                            showThumb = List.GetSearch.Search[Pos].ImgLink;
+                            fullTitle = List.GetSearch.Search[Pos].Title;
+
+                            if (List.GetSearch.Search[Pos].Downloaded)
+                            {
+                                Download.SetColorFilter(Color.Argb(255, 255, 255, 255));
+                                Download.SetImageDrawable(GetDrawable(Resource.Drawable.baseline_cloud_done_24));
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        showThumb = List.KeepWatchingList.KeepWatching[Pos].Thumb;
+                        fullTitle = List.KeepWatchingList.KeepWatching[Pos].Fulltitle;
+
+                        if (!List.KeepWatchingList.KeepWatching[Pos].IsOnline)
+                        {
+                            Download.SetColorFilter(Color.Argb(255, 255, 255, 255));
+                            Download.SetImageDrawable(GetDrawable(Resource.Drawable.baseline_cloud_done_24));
+                        }
+                    }
                 }
+                else
+                {
+                    List.GetMainPageSeries.TopShow.Downloaded = Utils.Database.IsItemDownloaded(Season, Show, IsSubtitled, Ep);
+                    List.GetMainPageSeries.TopShow.AlreadyChecked = true;
+
+                    showThumb = List.GetMainPageSeries.TopShow.ImgLink;
+                    fullTitle = List.GetMainPageSeries.TopShow.Title;
+
+                    if (List.GetMainPageSeries.TopShow.Downloaded)
+                    {
+                        Download.SetColorFilter(Color.Argb(255, 255, 255, 255));
+                        Download.SetImageDrawable(GetDrawable(Resource.Drawable.baseline_cloud_done_24));
+                    }
+                }
+                Utils.Bookmark.InsertData(Show, Ep, Season, IsSubtitled, showThumb, true, player.Duration, fullTitle);
             }
 
             PTitle.Text = PTitle.Text.Replace("Online ", "");
+
+            
 
             SeekTo((int)BookmarkInMillisecond);
             if (current == Xamarin.Essentials.NetworkAccess.Internet && HasAdFinished || !IsOnline)
@@ -868,7 +938,7 @@ namespace TFlix.Activities
 
         private void Start()
         {
-            if ((IsOnline && current == Xamarin.Essentials.NetworkAccess.Internet) || !IsOnline)
+            if ((IsOnline && current == Xamarin.Essentials.NetworkAccess.Internet) || !IsOnline && player != null)
             {
                 Window.AddFlags(WindowManagerFlags.KeepScreenOn);
                 PlayPause.SetImageResource(Resource.Drawable.baseline_pause_24);
@@ -881,7 +951,7 @@ namespace TFlix.Activities
         private void SetSubtitles()
         {
             string CurrCapt = "";
-            BackgroundWorker subWorker = new BackgroundWorker();
+
             subWorker.DoWork += (s, e) =>
             {
                 if (System.IO.File.OpenRead(filePath).Length > 1)
@@ -1033,7 +1103,6 @@ namespace TFlix.Activities
             adView.HeadlineView = adView.FindViewById(Resource.Id.ad_headline);
             adView.CallToActionView = adView.FindViewById(Resource.Id.ad_call_to_action);
             adView.IconView = adView.FindViewById(Resource.Id.ad_app_icon);
-            adView.PriceView = adView.FindViewById(Resource.Id.ad_price);
             adView.AdvertiserView = adView.FindViewById(Resource.Id.ad_advertiser);
 
             var skipAd = (RelativeLayout)adView.FindViewById(Resource.Id.skip_ad);
@@ -1071,16 +1140,6 @@ namespace TFlix.Activities
                 adView.IconView.Visibility = ViewStates.Visible;
             }
 
-            if (nativeAd.Price == null)
-            {
-                adView.PriceView.Visibility = ViewStates.Invisible;
-            }
-            else
-            {
-                adView.PriceView.Visibility = ViewStates.Visible;
-                ((TextView)adView.PriceView).Text = nativeAd.Price;
-            }
-
             if (nativeAd.Advertiser == null)
             {
                 adView.AdvertiserView.Visibility = ViewStates.Invisible;
@@ -1091,10 +1150,8 @@ namespace TFlix.Activities
                 adView.AdvertiserView.Visibility = ViewStates.Visible;
             }
 
-            // This method tells the Google Mobile Ads SDK that you have finished populating your
-            // native ad view with this native ad. The SDK will populate the adView's MediaView
-            // with the media content from this native ad.
-            adView.SetNativeAd(nativeAd);
+            
+            
 
             // Get the video controller for the ad. One will always be provided, even if the ad doesn't
             // have a video asset.
@@ -1103,16 +1160,26 @@ namespace TFlix.Activities
             // Updates the UI to say whether or not this ad has a video asset.
             if (vc.HasVideoContent)
             {
+                // This method tells the Google Mobile Ads SDK that you have finished populating your
+                // native ad view with this native ad. The SDK will populate the adView's MediaView
+                // with the media content from this native ad.
+                adView.SetNativeAd(nativeAd);
+
                 vc.SetVideoLifecycleCallbacks(new VideoCallback(this));
                 Loading.Visibility = ViewStates.Gone;
                 skipAd.PostDelayed(() => skipAd.Visibility = ViewStates.Visible, 5000);
-                Console.WriteLine(string.Format("Video status: Ad contains a {0:F2} video asset.",vc.AspectRatio));
+                Console.WriteLine(string.Format("Video status: Ad contains a {0:F2} video asset.", vc.AspectRatio));
             }
             else
             {
                 Console.WriteLine("Video status: Ad does not contain a video asset.");
                 HasAdFinished = true;
-                _NativeAd.Destroy();
+                try
+                {
+
+                    _NativeAd.Destroy();
+                    adView.Destroy();
+                }catch { }
                 _FrameLayout.RemoveAllViews();
                 Start();
             }
