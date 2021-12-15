@@ -18,7 +18,6 @@ namespace TFlix.List
         public string Title { get; set; }
         public string Synopsis { get; set; }
         public string ImgLink { get; set; }
-        public string IMG64 { get; set; }
         public string EPThumb { get; set; }
         public bool Downloading { get; set; }
         public bool Downloaded { get; set; }
@@ -28,5 +27,6 @@ namespace TFlix.List
     public class GetMainPageSeries
     {
         public static List<MainPageSeries> Series;
+        public static MainPageSeries TopShow;
     }
 }

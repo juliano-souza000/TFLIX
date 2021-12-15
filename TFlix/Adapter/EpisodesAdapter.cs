@@ -92,7 +92,7 @@ namespace TFlix.Adapter
 
         public override int GetItemViewType(int position)
         {
-            if (List.GetDownloads.Series[ListPos].Episodes[position].ShowSeason != 0 && List.GetDownloads.Series[ListPos].Episodes[position].TotalBytesEP == 0 && List.GetDownloads.Series[ListPos].Episodes[position].EP == 0 && List.GetDownloads.Series[ListPos].Episodes[position].Duration == 0)
+            if (List.GetDownloads.Series[ListPos].Episodes[position].ShowSeason != 0 && List.GetDownloads.Series[ListPos].Episodes[position].TotalBytesEP == 0 && List.GetDownloads.Series[ListPos].Episodes[position].EP == -1 && List.GetDownloads.Series[ListPos].Episodes[position].Duration == 0)
                 return ShowHeader;
             else
                 return ShowRow;
@@ -152,6 +152,7 @@ namespace TFlix.Adapter
 
                 if (IsUserSelecting)
                 {
+                    Holder.LoadingProgress.Visibility = ViewStates.Gone;
                     if (Holder.Selector.Visibility == ViewStates.Visible)
                         Holder.Selector.Checked = List.GetDownloads.Series[ListPos].Episodes[position].IsSelected;
                     Holder.Selector.Visibility = ViewStates.Visible;
@@ -198,6 +199,7 @@ namespace TFlix.Adapter
                     var res = context.GetDrawable(Resource.Drawable.baseline_mobile_friendly_24);
                     Holder.Done.SetImageDrawable(res);
                     Holder.Done.Visibility = ViewStates.Visible;
+                    Holder.LoadingProgress.Visibility = ViewStates.Gone;
                 }
                 else
                 {
@@ -208,6 +210,7 @@ namespace TFlix.Adapter
                 {
                     Holder.Play.Visibility = ViewStates.Visible;
                     Holder.DownloadProgress.Visibility = ViewStates.Gone;
+                    Holder.LoadingProgress.Visibility = ViewStates.Gone;
                 }
                 else
                 {
@@ -267,7 +270,6 @@ namespace TFlix.Adapter
             base.OnViewRecycled(holder);
         }
 
-
         private void Error_Click(object sender, EventArgs e)
         {
             View v = (View)sender;
@@ -284,7 +286,7 @@ namespace TFlix.Adapter
                 switch (ex.Item.ItemId)
                 {
                     case Resource.Id.download:
-                        Task.Run(() => Utils.Utils.DownloadVideo(List.GetDownloads.Series[ListPos].Episodes[pos].FullTitle, List.GetDownloads.Series[ListPos].Show, List.GetDownloads.Series[ListPos].ShowThumb, List.GetDownloads.Series[ListPos].Episodes[pos].EpThumb, List.GetDownloads.Series[ListPos].Episodes[pos].EP, List.GetDownloads.Series[ListPos].Episodes[pos].ShowSeason, context));
+                        Task.Run(() => Utils.Utils.DownloadVideo(context, List.GetDownloads.Series[ListPos].Episodes[pos].FullTitle, false));
 
                         RotateAnimation rotate = new RotateAnimation(0, 360, Dimension.RelativeToSelf, 0.48f, Dimension.RelativeToSelf, 0.48f);
                         rotate.Duration = 1000;
@@ -412,7 +414,10 @@ namespace TFlix.Adapter
                 RecyclerView.ViewHolder holder = rec.FindViewHolderForLayoutPosition(Pos);
                 CheckBox selector = holder.ItemView.FindViewById<CheckBox>(Resource.Id.episodes_dpg_selector);
                 ImageView thumb = holder.ItemView.FindViewById<ImageView>(Resource.Id.thumbnail_dpg_ep);
+                ImageView error = holder.ItemView.FindViewById<ImageView>(Resource.Id.error_dpg_ep_dp);
                 List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected = !List.GetDownloads.Series[ListPos].Episodes[Pos].IsSelected;
+
+                error.Visibility = ViewStates.Gone;
 
                 _IOnUserSelectItems.IsUserSelecting(true);
                 selector.PerformClick();
@@ -432,12 +437,15 @@ namespace TFlix.Adapter
                 var countOfItemsWithPosSeason = List.GetDownloads.Series[ListPos].Episodes.FindAll(delegate (List.Downloads dl) { return dl.ShowSeason == List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason && dl.EP != 0; }).Count;
                 var countOfItemsWithPosSeasonSelected = List.GetDownloads.Series[ListPos].Episodes.FindAll(delegate (List.Downloads dl) { return dl.ShowSeason == List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason && dl.IsSelected && dl.EP != 0; }).Count;
 
-                var headerIndex = List.GetDownloads.Series[ListPos].Episodes.FindIndex(x => x.EP == 0 && x.ShowSeason == List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason && x.ShowID == List.GetDownloads.Series[ListPos].Episodes[Pos].ShowID);
+                var headerIndex = List.GetDownloads.Series[ListPos].Episodes.FindIndex(x => x.EP == -1 && x.ShowSeason == List.GetDownloads.Series[ListPos].Episodes[Pos].ShowSeason && x.ShowID == List.GetDownloads.Series[ListPos].Episodes[Pos].ShowID);
 
-                if (countOfItemsWithPosSeason == countOfItemsWithPosSeasonSelected)
-                    List.GetDownloads.Series[ListPos].Episodes[headerIndex].IsSelected = true;
-                else
-                    List.GetDownloads.Series[ListPos].Episodes[headerIndex].IsSelected = false;
+                if (headerIndex >= 0)
+                {
+                    if (countOfItemsWithPosSeason == countOfItemsWithPosSeasonSelected)
+                        List.GetDownloads.Series[ListPos].Episodes[headerIndex].IsSelected = true;
+                    else
+                        List.GetDownloads.Series[ListPos].Episodes[headerIndex].IsSelected = false;
+                }
             }
         }
 

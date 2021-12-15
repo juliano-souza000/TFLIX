@@ -94,8 +94,6 @@ namespace TFlix.Utils
                 db.Insert(Eps);
             }
 
-            Bookmark.InsertData(show, ep, showSeason, isSubtitled);
-
             db.Dispose();
             db.Close();
             db = null;
@@ -124,7 +122,7 @@ namespace TFlix.Utils
 
             try
             {
-                if (ep != 0)
+                if (ep != -1)
                     System.IO.File.Delete(GetVideoPath(isSubtitled, show, ep, season));
             }
             catch { }
@@ -149,7 +147,7 @@ namespace TFlix.Utils
             {
                 var countOfItemsWithPosSeason = List.GetDownloads.Series[listPos].Episodes.FindAll(delegate (List.Downloads dl) { return dl.ShowSeason == season; }).Count;
                 if (countOfItemsWithPosSeason == 1)
-                    DeleteItem(isSubtitled, show, 0, season);
+                    DeleteItem(isSubtitled, show, -1 , season);
             }
             catch { }
 

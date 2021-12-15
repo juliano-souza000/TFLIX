@@ -1,7 +1,15 @@
 <resources>
     <string name="app_name">TFlix</string>
     <string name="action_settings">Settings</string>
+    <string name="keep_watching_header">Continue assistindo</string>
+    <string name="recent_series_header">Atualizações recentes</string>
+    <string name="mainpage_error_message1">Estamos com problemas para se comunicar com o servidor.</string>
+    <string name="mainpage_error_message2">Por favor, cheque sua conexão e tente novamente mais tarde.</string>
+    <string name="mainpage_error_message3">Caso o problema persista tente mudar suas configurações de DNS.</string>
+    <string name="watch">Assistir</string>
+    <string name="info">Info</string>
     <string name="ad_unit_id">ca-app-pub-3292674199284422/4976819650</string>
     <string name="ad_unit_video_id">ca-app-pub-3292674199284422/9566338333</string>
     <string name="ad_app_id">ca-app-pub-3292674199284422~4697424539</string>
+    <string name="appbar_scrolling_behavior">android.support.design.widget.AppBarLayout$ScrollingViewBehavior</string>
 </resources>

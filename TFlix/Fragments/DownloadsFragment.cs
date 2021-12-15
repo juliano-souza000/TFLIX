@@ -8,6 +8,7 @@ using Android.Content;
 using Android.Graphics;
 using Android.OS;
 using Android.Runtime;
+using Android.Support.V4.Content;
 using Android.Support.V7.Widget;
 using Android.Views;
 using Android.Widget;
@@ -57,6 +58,7 @@ namespace TFlix.Fragments
                 Series = (RecyclerView)view.FindViewById(Resource.Id.downloaded_series);
                 toolbar = (Toolbar)view.FindViewById(Resource.Id.downloaded_series_toolbar);
 
+                Activity.Window.SetStatusBarColor(new Color(ContextCompat.GetColor(Context, Resource.Color.colorPrimary)));
                 Activity.SetActionBar(toolbar);
 
                 adapter = new DownloadsAdapter(Application.Context, Series, this);
@@ -65,6 +67,8 @@ namespace TFlix.Fragments
 
                 Activity.ActionBar.SetDisplayShowHomeEnabled(false);
                 Activity.ActionBar.SetDisplayHomeAsUpEnabled(false);
+                toolbar.SetBackgroundResource(Resource.Drawable.action_bar_background);
+
                 toolbar.NavigationOnClick += Toolbar_NavigationOnClick;
                 toolbar.MenuItemClick += Toolbar_MenuItemClick;
 
@@ -103,7 +107,8 @@ namespace TFlix.Fragments
             Activity.ActionBar.Title = "Séries";
             Activity.ActionBar.SetDisplayShowHomeEnabled(false);
             Activity.ActionBar.SetDisplayHomeAsUpEnabled(false);
-            toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
+            toolbar.SetBackgroundResource(Resource.Drawable.action_bar_background);
+            //toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
             toolbar.Menu.Clear();
 
             adapter.IsUserSelecting = false;
@@ -128,7 +133,8 @@ namespace TFlix.Fragments
                             Activity.ActionBar.Title = "Séries";
                             Activity.ActionBar.SetDisplayShowHomeEnabled(false);
                             Activity.ActionBar.SetDisplayHomeAsUpEnabled(false);
-                            toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
+                            toolbar.SetBackgroundResource(Resource.Drawable.action_bar_background);
+                            //toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
                             toolbar.Menu.Clear();
                             if(FragmentManager != null)
                                 FragmentManager.BeginTransaction().Replace(Resource.Id.main_frame, new DownloadsFragment()).Commit();
@@ -139,7 +145,8 @@ namespace TFlix.Fragments
                             Activity.ActionBar.Title = "Séries";
                             Activity.ActionBar.SetDisplayShowHomeEnabled(false);
                             Activity.ActionBar.SetDisplayHomeAsUpEnabled(false);
-                            toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
+                            toolbar.SetBackgroundResource(Resource.Drawable.action_bar_background);
+                            //toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
                             toolbar.Menu.Clear();
                         }
                     }
@@ -163,7 +170,7 @@ namespace TFlix.Fragments
 
                 Activity.ActionBar.SetDisplayShowHomeEnabled(true);
                 Activity.ActionBar.SetDisplayHomeAsUpEnabled(true);
-
+                toolbar.SetBackgroundResource(0);
                 toolbar.SetBackgroundColor(Color.ParseColor("#0362FC"));
                 if (List.GetDownloads.Series.Where(row => row.IsSelected).Count() > 0)
                 {
@@ -188,7 +195,8 @@ namespace TFlix.Fragments
                 Activity.ActionBar.Title = "Séries";
                 Activity.ActionBar.SetDisplayShowHomeEnabled(false);
                 Activity.ActionBar.SetDisplayHomeAsUpEnabled(false);
-                toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
+                toolbar.SetBackgroundResource(Resource.Drawable.action_bar_background);
+                //toolbar.SetBackgroundColor(Color.ParseColor("#" + Android.Support.V4.Content.Res.ResourcesCompat.GetColor(Resources, Resource.Color.colorPrimary, null).ToString("X")));
             }
             IsSelecting = userSelecting;
         }

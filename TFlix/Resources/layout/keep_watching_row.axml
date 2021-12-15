@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:orientation="vertical"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:elevation="5dp">
+	<RelativeLayout
+		android:layout_width="110dp"
+		android:layout_height="130dp"
+		android:id="@+id/imageframe_kpg">
+		<ImageView
+			android:layout_width="110dp"
+			android:layout_height="130dp"
+			android:layout_centerInParent="true"
+			android:background="#505050"
+			android:scaleType="centerCrop"
+			android:adjustViewBounds="true"
+			android:id="@+id/image_kpg"/>
+		<ProgressBar
+			android:id="@+id/progress_kpg"
+			style="@android:style/Widget.ProgressBar.Horizontal"
+			android:progressDrawable="@drawable/progressbar_background"
+			android:layout_width="110dp"
+			android:layout_height="3dp"
+			android:max="100"
+			android:progress="50"
+			android:layout_alignParentBottom="true"
+			android:indeterminate="false" />
+		<ImageView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_centerInParent="true"
+			android:src="@drawable/play_circle_outline"/>
+	</RelativeLayout>
+	<RelativeLayout
+		android:layout_width="110dp"
+		android:layout_height="35dp"
+		android:background="#000"
+		android:layout_centerHorizontal="true"
+		android:layout_below="@id/imageframe_kpg">
+		<ImageView
+			android:layout_width="24dp"
+			android:layout_height="24dp"
+			android:layout_marginRight="5dp"
+			android:rotation="180"
+			android:tint="#FFF"
+			android:layout_alignParentRight="true"
+			android:layout_centerVertical="true"
+			android:src="@drawable/baseline_info_outline_24"
+			android:id="@+id/info_kpg"/>
+		<TextView
+			android:id="@+id/title_kpg"
+			android:layout_toLeftOf="@id/info_kpg"
+			android:text="S1:E5"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginLeft="5dp"
+			android:layout_marginRight="5dp"
+			android:layout_centerVertical="true"
+			android:singleLine="true"
+			android:textSize="6.5pt" />
+	</RelativeLayout>
+</RelativeLayout>

@@ -6,6 +6,7 @@ using System.Text;
 
 using Android.App;
 using Android.Content;
+using Android.Graphics;
 using Android.OS;
 using Android.Runtime;
 using Android.Support.V7.Widget;
@@ -20,11 +21,11 @@ namespace TFlix.Fragments
 {
     public class SearchFragment : Android.Support.V4.App.Fragment
     {
-        SearchView Search;
-        RecyclerView SearchRecycler;
-        Adapter.SearchAdapter adapter;
-        ProgressBar Loading;
-        FrameLayout Frame;
+        private SearchView Search;
+        private RecyclerView SearchRecycler;
+        private Adapter.SearchAdapter adapter;
+        private ProgressBar Loading;
+        private FrameLayout Frame;
 
         private int page = 1;
         private bool IsDownloading;
@@ -117,7 +118,10 @@ namespace TFlix.Fragments
                         }
                         catch
                         {
-                            Toast.MakeText(Application.Context, "FIM", ToastLength.Long).Show();
+                            Activity.RunOnUiThread(() =>
+                            {
+                                page--;
+                            });
                         }
                     };
                     worker.RunWorkerAsync();
